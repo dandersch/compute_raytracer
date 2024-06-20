@@ -89,10 +89,6 @@ int main()
                            { 1, -1, 0, 1,    1, 0},
                            {-1,  1, 0, 1,    0, 1},
                            { 1,  1, 0, 1,    1, 1}};
-    //vertex_t vertices[] = {{-1, -1, 0, 0,    0, 0},
-    //                       { 1, -1, 1, 0,    1, 0},
-    //                       { 1,  1, 1, 1,    0, 1},
-    //                       {-1,  1, 0, 1,    1, 1}};
     {
         assert(glGetError() == GL_NO_ERROR);
 
@@ -103,9 +99,9 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertices), 0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex_t), 0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertices), (void*) offsetof(vertex_t, u));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t), (void*) offsetof(vertex_t, u));
         glEnableVertexAttribArray(1);
     }
 
@@ -148,8 +144,8 @@ int main()
                                 "out vec4 color;\n"
                                 "uniform sampler2D u_texture;\n"
                                 "void main(void) {\n"
-                                "color = texture(u_texture, o_tex_coord);\n"
-                                //"color = vec4(1.0,0.0,1.0,1.0);\n"
+                                //"color = texture(u_texture, o_tex_coord);\n"
+                                "color = vec4(1.0,0.0,0.0,1.0);\n"
                                 "}";
         glShaderSource(frag_shader_id, 1, &fs_source, NULL);
         glCompileShader(frag_shader_id);
