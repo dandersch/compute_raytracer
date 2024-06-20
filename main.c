@@ -160,6 +160,29 @@ int main()
         };
     }
 
+    /* create shader */
+    unsigned int shader_program_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        shader_program_id = glCreateProgram();
+        glAttachShader(shader_program_id, vertex_shader_id);
+        glAttachShader(shader_program_id, frag_shader_id);
+        glLinkProgram(shader_program_id);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetProgramiv(shader_program_id, GL_LINK_STATUS, &success);
+        if(!success)
+        {
+            glGetProgramInfoLog(shader_program_id, 512, NULL, infoLog);
+            printf("Shader linking failed: %s\n", infoLog);
+        }
+    }
+
+    assert(glGetError() == GL_NO_ERROR);
+
 
     return 0;
 };
