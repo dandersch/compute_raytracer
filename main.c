@@ -132,6 +132,33 @@ int main()
         };
     }
 
+    /* create fragment shader */
+    unsigned int frag_shader_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
+        const char* fs_source = "#version 430 core\n"
+                                "in vec2 o_tex_coord;\n"
+                                "out vec4 color;\n"
+                                "uniform sampler2D u_texture;\n"
+                                "void main(void) {\n"
+                                //"color = texture(u_texture, ex_TexCoor) + vec4(1.0,0.0,0.0,1.0);\n"
+                                "color = vec4(1.0,0.0,1.0,1.0);\n"
+                                "}";
+        glShaderSource(frag_shader_id, 1, &fs_source, NULL);
+        glCompileShader(frag_shader_id);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(frag_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(frag_shader_id, 512, NULL, infoLog);
+            printf("Fragment shader compilation failed: %s\n", infoLog);
+        };
+    }
 
 
     return 0;
