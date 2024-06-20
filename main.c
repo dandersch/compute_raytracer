@@ -61,6 +61,10 @@ int main()
     /* create texture */
     unsigned int texture_id;
     unsigned int texture_format = GL_RGBA8;
+    unsigned char texture[4][4] = {{255,0,0,255},
+                                   {255,0,255,255},
+                                   {0,255,0,255},
+                                   {255,0,255,255}};
     //unsigned char texture[WINDOW_WIDTH * WINDOW_HEIGHT * 4] = {255};
     {
         assert(glGetError() == GL_NO_ERROR);
@@ -73,8 +77,9 @@ int main()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        //glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+        //glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     /* generate vao & vbo for texture */
@@ -143,8 +148,8 @@ int main()
                                 "out vec4 color;\n"
                                 "uniform sampler2D u_texture;\n"
                                 "void main(void) {\n"
-                                //"color = texture(u_texture, ex_TexCoor) + vec4(1.0,0.0,0.0,1.0);\n"
-                                "color = vec4(1.0,0.0,1.0,1.0);\n"
+                                "color = texture(u_texture, o_tex_coord);\n"
+                                //"color = vec4(1.0,0.0,1.0,1.0);\n"
                                 "}";
         glShaderSource(frag_shader_id, 1, &fs_source, NULL);
         glCompileShader(frag_shader_id);
@@ -190,7 +195,7 @@ int main()
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         glUseProgram(shader_program_id);
-        glActiveTexture(GL_TEXTURE0 + 0);
+        //glActiveTexture(GL_TEXTURE0 + 0);
 
         glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
 
