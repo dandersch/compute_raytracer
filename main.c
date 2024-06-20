@@ -8,6 +8,12 @@
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 720
 
+typedef struct vertex_t
+{
+    float x,y,z,w;
+    float u,v;
+} vertex_t;
+
 void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id,
                                   GLenum severity, GLsizei length,
                                   const GLchar* message, const void* userParam)
@@ -71,6 +77,32 @@ int main()
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    /* generate vao & vbo for texture */
+    unsigned int texture_vbo;
+    unsigned int texture_vao;
+    vertex_t vertices[] = {{-1, -1, 0, 1,    0, 0},
+                           { 1, -1, 0, 1,    1, 0},
+                           {-1,  1, 0, 1,    0, 1},
+                           { 1,  1, 0, 1,    1, 1}};
+    //vertex_t vertices[] = {{-1, -1, 0, 0,    0, 0},
+    //                       { 1, -1, 1, 0,    1, 0},
+    //                       { 1,  1, 1, 1,    0, 1},
+    //                       {-1,  1, 0, 1,    1, 1}};
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        glGenVertexArrays(1, &texture_vao);
+        glBindVertexArray(texture_vao);
+
+        glGenBuffers(1, &texture_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertices), 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertices), (void*) offsetof(vertex_t, u));
+        glEnableVertexAttribArray(1);
+    }
 
 
 
