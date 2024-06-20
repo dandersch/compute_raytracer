@@ -104,6 +104,33 @@ int main()
         glEnableVertexAttribArray(1);
     }
 
+    /* create vertex shader */
+    unsigned int vertex_shader_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
+        const char* vs_source = "#version 430 core\n"
+            "layout(location=0) in vec4 pos;\n"
+            "layout(location=1) in vec2 tex_pos;\n"
+            "out vec2 o_tex_coord;\n"
+            "void main(void) {\n"
+            "gl_Position = pos;\n"
+            "o_tex_coord = tex_pos;\n"
+            "}";
+        glShaderSource(vertex_shader_id, 1, &vs_source, NULL);
+        glCompileShader(vertex_shader_id);
+
+        /* print compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(vertex_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(vertex_shader_id, 512, NULL, infoLog);
+            printf("Vertex shader compilation failed: %s\n", infoLog);
+        };
+    }
 
 
 
