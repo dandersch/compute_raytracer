@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gcc main.c -o main -lglfw -lGLEW -lGL
+gcc -Wall main.c -o main -lglfw -lGLEW -lGL
