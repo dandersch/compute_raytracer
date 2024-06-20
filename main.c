@@ -183,6 +183,26 @@ int main()
 
     assert(glGetError() == GL_NO_ERROR);
 
+    int running = 1;
+    while (running)
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        glUseProgram(shader_program_id);
+        glActiveTexture(GL_TEXTURE0 + 0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        running++;
+        if (running > 250) { running = 0; }
+
+        glfwSwapBuffers(window);
+    }
+
+    printf("Terminated\n");
 
     return 0;
 };
