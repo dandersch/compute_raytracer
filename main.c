@@ -234,6 +234,23 @@ EXPORT void on_load(state_t* state)
 
         assert(glGetError() == GL_NO_ERROR);
     }
+
+    typedef struct test_t
+    {
+        float a;
+        float b;
+        float c;
+    } test_t;
+    #define TEST_COUNT 2
+    test_t test_buf[TEST_COUNT] = {{0.5,0,0}, {1,1,1}};
+    /* upload buffers to compute shader */
+    {
+        GLuint ssbo; // shader storage buffer object
+        glGenBuffers(1, &ssbo);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(test_t) * TEST_COUNT, test_buf, GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+    }
 }
 
 EXPORT void draw(state_t* state)
@@ -244,7 +261,7 @@ EXPORT void draw(state_t* state)
     glUseProgram(state->cs_program_id);
     /* TODO upload uniforms */
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    #define WORK_GROUP_SIZE 16
+    #define WORK_GROUP_SIZE 1 // needs to match local_size_{x,y} in compute shader
     glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -285,6 +302,9 @@ int main()
         glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT,1);
+
+        glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if (!window) { printf("Failed to create GLFW window.\n"); glfwTerminate(); }

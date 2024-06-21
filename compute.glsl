@@ -1,9 +1,26 @@
 SHADER_STRINGIFY(
 writeonly uniform image2D output_texture;
-layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+struct test_t {
+    float a;
+    float b;
+    float c;
+};
+
+layout(std430, binding = 0) buffer test_buf {
+    test_t test_array[];
+};
+
+//layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
-    imageStore(output_texture, ivec2(x, y), vec4(1,0,1,1));
+
+    float col1 = x/640.0;
+    float col2 = y/360.0;
+    float col3 = test_array[0].a;
+
+    imageStore(output_texture, ivec2(x, y), vec4(col1, col2, col3, 1));
 }
 )
