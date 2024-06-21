@@ -23,6 +23,19 @@ typedef struct vertex_t
     float u,v;
 } vertex_t;
 
+struct camera_t
+{
+    int width;
+    int height;
+    float fov_y;
+    float fov_x;
+    float rotation_x;
+    float rotation_y;
+    float sensitivity;
+    float move_speed;
+};
+typedef struct camera_t camera_t;
+
 void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) { fprintf(stderr, "%s\n", message); }
 
 typedef struct state_t
