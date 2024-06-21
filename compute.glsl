@@ -26,6 +26,10 @@ struct ray_t {
 const float EPSILON   = -0.001f;
 const float FLOAT_MAX = 3.402823466e+38;
 
+float ray_triangle_intersection(ray_t r, triangle_t t)
+{
+    return 1;
+}
 
 vec4 shade(ray_t r, float t, int index)
 {
@@ -68,5 +72,37 @@ void main() {
         ray.origin += ray_dir_in_camera_space * 2.0 * ndc.x - camera.dir.xyz;
         ray.dir = ray_dir_in_camera_space;
     }
+
+    /* check for intersections */
+    uint reflection_depth = 1;
+    {
+        for (uint n = 0; n < reflection_depth + 1; ++n)
+        {
+            int tri_idx = -1;
+            float t     = FLOAT_MAX;
+            float temp  = FLOAT_MAX;
+
+            /* compute intersection of ray and triangles */
+            for (int i = 0; i < triangle_count; i++) {
+                temp = ray_triangle_intersection(ray, triangles[i]);
+                if (temp < t && temp >= EPSILON) {
+                    t       = temp;
+                    tri_idx = i;
+                }
+            }
+
+            if (tri_idx != -1) /* ray hit triangle */
+            {
+                /* compute color */
+                color = shade(ray, t, tri_idx); // TODO consider specularity
+            } else {
+                break; /* early return */
+            }
+        }
+    }
+
+    //imageStore(output_texture, ivec2(x, y), color);
+    imageStore(output_texture, ivec2(x, y), color);
+    //imageStore(output_texture, ivec2(x, y), triangles[0].color);
 }
 )
