@@ -23,12 +23,32 @@ struct ray_t {
 };
 
 /* constants */
-const float EPSILON   = -0.001f;
+const float EPSILON   = 0.001f;
 const float FLOAT_MAX = 3.402823466e+38;
 
 float ray_triangle_intersection(ray_t r, triangle_t t)
 {
-    return 1;
+    vec3 a_to_b  = t.b - t.a;
+    vec3 a_to_c  = t.c - t.a;
+
+    mat3 mat = mat3(a_to_b, a_to_c, -1.0f * r.dir);
+
+    float det = determinant(mat);
+
+    if (det == 0.0f) { return FLOAT_MAX; } /* early out */
+
+    vec3 ray_to_a = r.origin - t.a;
+
+    vec3 dst = inverse(mat) * ray_to_a;
+
+    if (dst.x >= -EPSILON && dst.x <= (1 + EPSILON)) {
+        if (dst.y >= -EPSILON && dst.y <= (1 + EPSILON)) {
+            if ((dst.x + dst.y) <= (1 + EPSILON)) {
+                return dst.z;
+            }
+        }
+    }
+    return FLOAT_MAX;
 }
 
 vec4 shade(ray_t r, float t, int index)
@@ -85,7 +105,7 @@ void main() {
             /* compute intersection of ray and triangles */
             for (int i = 0; i < triangle_count; i++) {
                 temp = ray_triangle_intersection(ray, triangles[i]);
-                if (temp < t && temp >= EPSILON) {
+                if (temp < t && temp >= -EPSILON) {
                     t       = temp;
                     tri_idx = i;
                 }
