@@ -5,8 +5,8 @@
 #include <assert.h>
 
 #define WINDOW_TITLE "compute raytracer"
-#define WINDOW_WIDTH  1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH  (1280/2)
+#define WINDOW_HEIGHT (720/2)
 
 typedef struct vertex_t
 {
@@ -61,11 +61,10 @@ int main()
     /* create texture */
     unsigned int texture_id;
     unsigned int texture_format = GL_RGBA8;
-    unsigned char texture[4][4] = {{255,0,0,255},
-                                   {255,0,255,255},
-                                   {0,255,0,255},
-                                   {255,0,255,255}};
-    //unsigned char texture[WINDOW_WIDTH * WINDOW_HEIGHT * 4] = {255};
+    unsigned char texture[4][4] = {{255,  0,  0,255},
+                                   {255,  0,255,255},
+                                   {  0,255,  0,255},
+                                   {  0,255,255,255}};
     {
         assert(glGetError() == GL_NO_ERROR);
 
@@ -78,7 +77,7 @@ int main()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         //glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture_format, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
         //glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -144,8 +143,8 @@ int main()
                                 "out vec4 color;\n"
                                 "uniform sampler2D u_texture;\n"
                                 "void main(void) {\n"
-                                //"color = texture(u_texture, o_tex_coord);\n"
-                                "color = vec4(1.0,0.0,0.0,1.0);\n"
+                                "color = texture(u_texture, o_tex_coord);\n"
+                                //"color = vec4(1.0,0.0,0.0,1.0);\n"
                                 "}";
         glShaderSource(frag_shader_id, 1, &fs_source, NULL);
         glCompileShader(frag_shader_id);
@@ -182,7 +181,60 @@ int main()
         }
     }
 
-    assert(glGetError() == GL_NO_ERROR);
+    /* create compute shader & program */
+    GLuint storage_buffer_ids[3];
+    unsigned int compute_shader_id;
+    unsigned int cs_program_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        glActiveTexture(GL_TEXTURE0 + 0);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glBindImageTexture(0, texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, texture_format);
+
+        assert(glGetError() == GL_NO_ERROR);
+
+        compute_shader_id = glCreateShader(GL_COMPUTE_SHADER);
+        const char* cs_source = "#version 430\n"
+                                "writeonly uniform image2D output_texture;\n"
+                                "layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;\n"
+                                "void main() {\n"
+                                "    uint x = gl_GlobalInvocationID.x;\n"
+                                "    uint y = gl_GlobalInvocationID.y;\n"
+                                "    imageStore(output_texture, ivec2(x, y), vec4(0,1,0,1));\n"
+                                "}\n";
+        glShaderSource(compute_shader_id, 1, &cs_source, NULL);
+        glCompileShader(compute_shader_id);
+
+        assert(glGetError() == GL_NO_ERROR);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(compute_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(compute_shader_id, 512, NULL, infoLog);
+            printf("Compute shader compilation failed: %s\n", infoLog);
+        };
+
+        cs_program_id = glCreateProgram();
+        glAttachShader(cs_program_id, compute_shader_id);
+        glLinkProgram(cs_program_id);
+        glDeleteShader(compute_shader_id);
+
+        /* print any linking errors */
+        glGetProgramiv(cs_program_id, GL_LINK_STATUS, &success);
+        if(!success)
+        {
+            glGetProgramInfoLog(cs_program_id, 512, NULL, infoLog);
+            printf("Shader linking failed: %s\n", infoLog);
+        }
+
+        glUseProgram(cs_program_id);
+
+        assert(glGetError() == GL_NO_ERROR);
+    }
 
     int running = 1;
     while (running)
@@ -198,7 +250,7 @@ int main()
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         running++;
-        if (running > 250) { running = 0; }
+        if (running > 100) { running = 0; }
 
         glfwSwapBuffers(window);
     }
