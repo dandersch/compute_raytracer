@@ -5,6 +5,7 @@ writeonly uniform image2D output_texture;
 
 
 struct camera_t { vec4 pos; vec4 dir; };
+
 //uniform camera_t camera; // TODO
 struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };

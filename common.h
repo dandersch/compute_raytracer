@@ -9,9 +9,9 @@
  * NOTE: we could go even further with this and have centralized struct definitions...
  */
   #define WINDOW_TITLE "compute raytracer"
-  #define WINDOW_WIDTH  (1280/2)
-S(#define WINDOW_WIDTH  (1280/2))
-  #define WINDOW_HEIGHT (720/2)
-S(#define WINDOW_HEIGHT (720/2))
-  #define TRIANGLE_COUNT 1
-S(#define TRIANGLE_COUNT 1)
+  #define WINDOW_WIDTH  1280
+S(#define WINDOW_WIDTH  1280)
+  #define WINDOW_HEIGHT 720
+S(#define WINDOW_HEIGHT 720)
+  #define TRIANGLE_COUNT 3
+S(#define TRIANGLE_COUNT 3)

@@ -264,10 +264,19 @@ EXPORT int on_load(state_t* state)
     struct triangle_t { vec3 a; float _1; vec3 b; float _2; vec3 c; float _3; float color[4]; };
     _Pragma ("pack(pop)")
     typedef struct triangle_t triangle_t;
-    triangle_t triangle_buf[TRIANGLE_COUNT] = {{{ 0.8, 0.2, -1}, 0,
-                                                { 0.5, 0.8, -1}, 0,
-                                                { 0.2, 0.2, -1}, 0,
-                                                {0,1,0,1}}};
+    triangle_t triangle_buf[TRIANGLE_COUNT];
+    triangle_buf[0] = (triangle_t){{ 0.7, 0.2, -10}, 0,
+                                   { 0.5, 0.7, -10}, 0,
+                                   { 0.3, 0.2, -10}, 0,
+                                   {0,1,0,1}};
+    triangle_buf[1] = (triangle_t){{ 0.4, 0.5, -5}, 0,
+                                   { 0.3, 0.8, -5}, 0,
+                                   { 0.2, 0.4, -5}, 0,
+                                   {1,0,0,1}};
+    triangle_buf[2] = (triangle_t){{ 0.8, 0.5, -1}, 0,
+                                   { 0.7, 0.8, -1}, 0,
+                                   { 0.5, 0.4, -1}, 0,
+                                   {0,0,1,1}};
     /* upload buffers to compute shader */
     {
         GLuint ssbo; // shader storage buffer object
