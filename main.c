@@ -49,7 +49,7 @@ typedef struct state_t
     unsigned int cs_program_id;
 } state_t;
 
-EXPORT void on_load(state_t* state)
+EXPORT int on_load(state_t* state)
 {
     /* init glew */
     {
@@ -215,6 +215,7 @@ EXPORT void on_load(state_t* state)
         {
             glGetShaderInfoLog(*compute_shader_id, 512, NULL, infoLog);
             printf("Compute shader compilation failed: %s\n", infoLog);
+            return 0;
         };
 
         *cs_program_id = glCreateProgram();
@@ -228,6 +229,7 @@ EXPORT void on_load(state_t* state)
         {
             glGetProgramInfoLog(*cs_program_id, 512, NULL, infoLog);
             printf("Shader linking failed: %s\n", infoLog);
+            return 0;
         }
 
         glUseProgram(*cs_program_id);
@@ -235,12 +237,13 @@ EXPORT void on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
     }
 
-    typedef struct test_t
+    struct test_t
     {
         float a;
         float b;
         float c;
-    } test_t;
+    };
+    typedef struct test_t test_t;
     #define TEST_COUNT 2
     test_t test_buf[TEST_COUNT] = {{0.5,0,0}, {1,1,1}};
     /* upload buffers to compute shader */
@@ -251,6 +254,8 @@ EXPORT void on_load(state_t* state)
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(test_t) * TEST_COUNT, test_buf, GL_STATIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
     }
+
+    return 1;
 }
 
 EXPORT void draw(state_t* state)
@@ -283,7 +288,7 @@ EXPORT void draw(state_t* state)
 static void*  dll_handle;
 static time_t dll_last_mod;
 typedef struct state_t state_t;
-static void (*on_load)(state_t*);
+static int  (*on_load)(state_t*);
 static void (*draw)(state_t*);
 #endif
 
