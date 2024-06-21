@@ -8,6 +8,8 @@
 #define WINDOW_WIDTH  (1280/2)
 #define WINDOW_HEIGHT (720/2)
 
+#define SHADER_STRINGIFY(x) "#version 430 core\n" #x
+
 #ifdef COMPILE_DLL
 #if defined(_MSC_VER)
     #define EXPORT __declspec(dllexport)
@@ -112,14 +114,14 @@ EXPORT void on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
 
         *vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-        const char* vs_source = "#version 430 core\n"
-            "layout(location=0) in vec4 pos;\n"
-            "layout(location=1) in vec2 tex_pos;\n"
-            "out vec2 o_tex_coord;\n"
-            "void main(void) {\n"
-            "gl_Position = pos;\n"
-            "o_tex_coord = tex_pos;\n"
-            "}";
+        const char* vs_source = SHADER_STRINGIFY(
+            layout(location=0) in vec4 pos;
+            layout(location=1) in vec2 tex_pos;
+            out vec2 o_tex_coord;
+            void main(void) {
+            gl_Position = pos;
+            o_tex_coord = tex_pos;
+            });
         glShaderSource(*vertex_shader_id, 1, &vs_source, NULL);
         glCompileShader(*vertex_shader_id);
 
@@ -140,14 +142,14 @@ EXPORT void on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
 
         *frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-        const char* fs_source = "#version 430 core\n"
-                                "in vec2 o_tex_coord;\n"
-                                "out vec4 color;\n"
-                                "uniform sampler2D u_texture;\n"
-                                "void main(void) {\n"
-                                "color = texture(u_texture, o_tex_coord);\n"
-                                //"color = vec4(1.0,0.0,0.0,1.0);\n"
-                                "}";
+        const char* fs_source = SHADER_STRINGIFY(
+                                in vec2 o_tex_coord;
+                                out vec4 color;
+                                uniform sampler2D u_texture;
+                                void main(void) {
+                                color = texture(u_texture, o_tex_coord);
+                                //color = vec4(1.0,0.0,0.0,1.0);
+                                });
         glShaderSource(*frag_shader_id, 1, &fs_source, NULL);
         glCompileShader(*frag_shader_id);
 
@@ -197,14 +199,9 @@ EXPORT void on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
 
         *compute_shader_id = glCreateShader(GL_COMPUTE_SHADER);
-        const char* cs_source = "#version 430\n"
-                                "writeonly uniform image2D output_texture;\n"
-                                "layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;\n"
-                                "void main() {\n"
-                                "    uint x = gl_GlobalInvocationID.x;\n"
-                                "    uint y = gl_GlobalInvocationID.y;\n"
-                                "    imageStore(output_texture, ivec2(x, y), vec4(1,0,1,1));\n"
-                                "}\n";
+        const char* cs_source =
+                                #include "compute.glsl"
+                                ;
         glShaderSource(*compute_shader_id, 1, &cs_source, NULL);
         glCompileShader(*compute_shader_id);
 
