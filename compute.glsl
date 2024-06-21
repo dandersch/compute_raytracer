@@ -5,7 +5,7 @@ writeonly uniform image2D output_texture;
 
 
 struct camera_t { vec4 pos; vec4 dir; };
-//uniform camera_t camera; // TODO
+uniform camera_t camera;
 struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
 
@@ -64,9 +64,6 @@ void main() {
 
     /* init ray */
     ray_t ray;
-    camera_t camera;
-    camera.pos = vec4( 0, 0, 0,1);
-    camera.dir = vec4( 0, 0,-1,1);
 
     // normalized device coordinates from (x,y) screen coords
     vec2 ndc = vec2((x + 0.5) / WIDTH, (y + 0.5) / HEIGHT);
@@ -81,12 +78,12 @@ void main() {
     }
     #else
     { /* perspective projection */
-        camera.dir.xyz = normalize(camera.dir.xyz);
+        //camera.dir.xyz = normalize(camera.dir.xyz); // TODO normalize might be needed
         vec3 right = normalize(cross(camera.dir.xyz, vec3(0, 1, 0)));
         vec3 up    = normalize(cross(right, camera.dir.xyz));
 
         float aspect_ratio = float(WIDTH) / float(HEIGHT);
-        float fov = radians(90.0); // Adjust the field of view as needed
+        float fov = radians(CAMERA_FOV); // from common.h
         float tan_half_fov = tan(fov / 2.0);
 
         ray.dir = normalize(camera.dir.xyz +

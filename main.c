@@ -12,10 +12,6 @@
 #define SHADER_STRINGIFY(x) "#version 430 core\n" S(x)
 #define SHADER_VERSION_STRING "#version 430 core\n"
 
-const char* another_src =
-    #include "compute.glsl"
-    ;
-
 
 #ifdef COMPILE_DLL
 #if defined(_MSC_VER)
@@ -32,10 +28,10 @@ typedef struct vertex_t
 
 struct camera_t
 {
+    float pos[4];
+    float dir[4];
     int width;
     int height;
-    float fov_y;
-    float fov_x;
     float rotation_x;
     float rotation_y;
     float sensitivity;
@@ -67,6 +63,9 @@ typedef struct state_t
     /* create compute shader & program */
     unsigned int compute_shader_id;
     unsigned int cs_program_id;
+
+    /* movable camera */
+    camera_t camera;
 } state_t;
 
 EXPORT int on_load(state_t* state)
@@ -286,7 +285,31 @@ EXPORT int on_load(state_t* state)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
     }
 
+    /* upload uniforms */
+    camera_t* camera = &state->camera;
+    //camera->pos[0] = 1; camera->pos[1] = 0; camera->pos[2] = 0; camera->pos[3] = 1;
+    camera->dir[0] = 0; camera->dir[1] = 0; camera->dir[2] =-1; camera->dir[3] = 1;
+    {
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos[0], camera->pos[1], camera->pos[2], camera->pos[3]);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir[0], camera->dir[1], camera->dir[2], camera->dir[3]);
+    }
+
     return 1;
+}
+
+EXPORT void update(state_t* state, char input)
+{
+    enum { X, Y, Z, W };
+    switch(input)
+    {
+        case 'w': { state->camera.pos[Z] -= 0.5; } break;
+        case 'a': { state->camera.pos[X] -= 0.5; } break;
+        case 's': { state->camera.pos[Z] += 0.5; } break;
+        case 'd': { state->camera.pos[X] += 0.5; } break;
+        case 'q': { state->camera.pos[Y] += 0.5; } break;
+        case 'e': { state->camera.pos[Y] -= 0.5; } break;
+        default: {} break;
+    }
 }
 
 EXPORT void draw(state_t* state)
@@ -295,7 +318,15 @@ EXPORT void draw(state_t* state)
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     glUseProgram(state->cs_program_id);
-    /* TODO upload uniforms */
+
+    /* upload uniforms */
+    {
+        camera_t* camera                = &state->camera;
+        unsigned int* cs_program_id     = &state->cs_program_id;
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos[0], camera->pos[1], camera->pos[2], camera->pos[3]);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir[0], camera->dir[1], camera->dir[2], camera->dir[3]);
+    }
+
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     #define WORK_GROUP_SIZE 1 // needs to match local_size_{x,y} in compute shader
     glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
@@ -320,6 +351,7 @@ static void*  dll_handle;
 static time_t dll_last_mod;
 typedef struct state_t state_t;
 static int  (*on_load)(state_t*);
+static void (*update)(state_t*, char);
 static void (*draw)(state_t*);
 #endif
 
@@ -355,6 +387,7 @@ int main()
     /* load in dll */
     dll_handle   = dlopen(DLL_FILENAME, RTLD_NOW);
     on_load      = dlsym(dll_handle, "on_load");
+    update       = dlsym(dll_handle, "update");
     draw         = dlsym(dll_handle, "draw");
     struct stat attr;
     stat(DLL_FILENAME, &attr);
@@ -377,6 +410,7 @@ int main()
                 dlclose(dll_handle);
                 dll_handle = NULL;
                 on_load    = NULL;
+                update     = NULL;
                 draw       = NULL;
             }
             dll_handle = dlopen(DLL_FILENAME, RTLD_NOW);
@@ -386,6 +420,7 @@ int main()
                 dll_handle = dlopen(DLL_FILENAME, RTLD_NOW);
             }
             on_load      = dlsym(dll_handle, "on_load");
+            update       = dlsym(dll_handle, "update");
             draw         = dlsym(dll_handle, "draw");
 
             on_load(state);
@@ -395,8 +430,18 @@ int main()
 
         /* poll events */
         {
+            char input = ' ';
+
             glfwPollEvents();
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)      { input = 'w'; }
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)      { input = 'a'; }
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)      { input = 's'; }
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)      { input = 'd'; }
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)      { input = 'q'; }
+            if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)      { input = 'e'; }
+
+            update(state, input);
         }
 
         draw(state);

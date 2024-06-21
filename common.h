@@ -15,3 +15,5 @@ S(#define WINDOW_WIDTH  1080)
 S(#define WINDOW_HEIGHT 640)
   #define TRIANGLE_COUNT 3
 S(#define TRIANGLE_COUNT 3)
+  #define CAMERA_FOV     90
+S(#define CAMERA_FOV     90)
