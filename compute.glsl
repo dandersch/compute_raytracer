@@ -1,5 +1,6 @@
-SHADER_STRINGIFY(
-
+SHADER_VERSION_STRING
+#include "common.h"
+S(
 writeonly uniform image2D output_texture;
 
 struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
@@ -11,9 +12,6 @@ struct camera_t
 };
 
 //uniform camera_t camera; // TODO
-uniform uint width;
-uniform uint height;
-//uniform uint triangle_count; // TODO
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
 
 /* r = o + d * t */
@@ -23,8 +21,11 @@ struct ray_t {
 };
 
 /* constants */
-const float EPSILON   = 0.001f;
-const float FLOAT_MAX = 3.402823466e+38;
+const float EPSILON        = 0.001f;
+const float FLOAT_MAX      = 3.402823466e+38;
+const uint  WIDTH          = WINDOW_WIDTH;   // from common.h
+const uint  HEIGHT         = WINDOW_HEIGHT;  // from common.h
+const uint  triangle_count = TRIANGLE_COUNT; // from common.h
 
 float ray_triangle_intersection(ray_t r, triangle_t t)
 {
@@ -69,8 +70,8 @@ void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    float col1 = x/640.0;
-    float col2 = y/360.0;
+    float col1 = x/WIDTH;
+    float col2 = y/HEIGHT;
 
     vec4 color = vec4(0.f); // final color of pixel on texture
 
@@ -79,10 +80,9 @@ void main() {
     camera_t camera; // TODO as uniform
     camera.pos = vec4( 0, 0, 0,1);
     camera.dir = vec4( 0, 0,-1,1);
-    uint triangle_count = 1; // TODO as uniform
     {
         // Calculate normalized device coordinates (NDC) from pixel coordinates
-        vec2 ndc = vec2((x + 0.5) / 640, (y + 0.5) / 360); // TODO hardcoded width and height
+        vec2 ndc = vec2((x + 0.5) / WIDTH, (y + 0.5) / HEIGHT);
 
         ray.origin = camera.pos.xyz;
 

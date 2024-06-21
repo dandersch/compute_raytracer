@@ -9,7 +9,7 @@ terminate_program()
 
 trap terminate_program EXIT # call on exit
 
-watched_files="main.c|compute.glsl"
+watched_files="main.c|compute.glsl|common.h"
 
 ./build.sh
 

@@ -4,11 +4,18 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define WINDOW_TITLE "compute raytracer"
-#define WINDOW_WIDTH  (1280/2)
-#define WINDOW_HEIGHT (720/2)
+#define S(x)
+#include "common.h"
+#undef S
 
-#define SHADER_STRINGIFY(x) "#version 430 core\n" #x
+#define S(x) #x "\n" // STRINGIFY macro
+#define SHADER_STRINGIFY(x) "#version 430 core\n" S(x)
+#define SHADER_VERSION_STRING "#version 430 core\n"
+
+const char* another_src =
+    #include "compute.glsl"
+    ;
+
 
 #ifdef COMPILE_DLL
 #if defined(_MSC_VER)
@@ -257,7 +264,6 @@ EXPORT int on_load(state_t* state)
     struct triangle_t { vec3 a; float _1; vec3 b; float _2; vec3 c; float _3; float color[4]; };
     _Pragma ("pack(pop)")
     typedef struct triangle_t triangle_t;
-    #define TRIANGLE_COUNT 1
     triangle_t triangle_buf[TRIANGLE_COUNT] = {{{ 0.5,   0, -10}, 0,
                                                 {   0, 0.5, -10}, 0,
                                                 {-0.5,   0, -10}, 0,
