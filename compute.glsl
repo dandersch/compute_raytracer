@@ -5,7 +5,6 @@ writeonly uniform image2D output_texture;
 
 
 struct camera_t { vec4 pos; vec4 dir; };
-
 //uniform camera_t camera; // TODO
 struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
@@ -68,18 +67,32 @@ void main() {
     camera_t camera;
     camera.pos = vec4( 0, 0, 0,1);
     camera.dir = vec4( 0, 0,-1,1);
-    {
-        // normalized device coordinates from (x,y) screen coords
-        vec2 ndc = vec2((x + 0.5) / WIDTH, (y + 0.5) / HEIGHT);
 
-        ray.origin = camera.pos.xyz;
+    // normalized device coordinates from (x,y) screen coords
+    vec2 ndc = vec2((x + 0.5) / WIDTH, (y + 0.5) / HEIGHT);
+    ray.origin = camera.pos.xyz;
 
-        /* orthographic projection */
+    #if 0
+    {  /* orthographic projection */
         ray.dir = normalize(camera.dir.xyz); // ray direction in camera space
-        //ray.origin += ray.dir * 2.0 * ndc.x - camera.dir.xyz;
         ray.origin.x += ndc.x;
         ray.origin.y += ndc.y;
+        //ray.origin += ray.dir * 2.0 * ndc.x - camera.dir.xyz;
     }
+    #else
+    { /* perspective projection */
+        camera.dir.xyz = normalize(camera.dir.xyz);
+        vec3 right = normalize(cross(camera.dir.xyz, vec3(0, 1, 0)));
+        vec3 up    = normalize(cross(right, camera.dir.xyz));
+
+        float aspect_ratio = float(WIDTH) / float(HEIGHT);
+        float fov = radians(90.0); // Adjust the field of view as needed
+        float tan_half_fov = tan(fov / 2.0);
+
+        ray.dir = normalize(camera.dir.xyz +
+                            right * (2.0 * ndc.x - 1.0) * tan_half_fov * aspect_ratio + up * (1.0 - 2.0 * ndc.y) * tan_half_fov);
+    }
+    #endif
 
     /* check for intersections */
     uint reflection_depth = 1;
