@@ -14,22 +14,252 @@ typedef struct vertex_t
     float u,v;
 } vertex_t;
 
+void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) { fprintf(stderr, "%s\n", message); }
 
-typedef struct test_t
+typedef struct state_t
 {
-    float color[4];
-} test_t;
+    /* create texture */
+    unsigned int texture_id;
+    unsigned int texture_format;
 
-void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id,
-                                  GLenum severity, GLsizei length,
-                                  const GLchar* message, const void* userParam)
+    /* generate vao & vbo for texture */
+    unsigned int texture_vbo;
+    unsigned int texture_vao;
+
+    /* create vertex shader */
+    unsigned int vertex_shader_id;
+
+    /* create fragment shader */
+    unsigned int frag_shader_id;
+
+    /* create shader */
+    unsigned int shader_program_id;
+
+    /* create compute shader & program */
+    unsigned int compute_shader_id;
+    unsigned int cs_program_id;
+} state_t;
+
+void on_load(state_t* state)
 {
-    fprintf(stderr, "%s\n", message);
+    /* init glew */
+    {
+        glewExperimental = GL_TRUE;
+        if (glewInit() != GLEW_OK) { printf("Failed to initialize glew.\n"); }
+
+        const GLubyte* renderer = glGetString( GL_RENDERER );
+        const GLubyte* version  = glGetString( GL_VERSION );
+        printf("Renderer: %s\n", renderer);
+        printf("OpenGL version %s\n", version);
+    }
+
+    /* enable debugging abilities */
+    {
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(gl_debug_callback, NULL);
+    }
+
+    /* create texture */
+    unsigned int* texture_id = &state->texture_id;
+    unsigned int* texture_format = &state->texture_format;
+    *texture_format = GL_RGBA8;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        //glEnable(GL_TEXTURE_2D); // NOTE: causes error...
+        glGenTextures(1, texture_id);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, *texture_id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, *texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        //glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    /* generate vao & vbo for texture */
+    unsigned int* texture_vbo = &state->texture_vbo;
+    unsigned int* texture_vao = &state->texture_vao;
+    vertex_t vertices[] = {{-1, -1, 0, 1,    0, 0}, { 1, -1, 0, 1,    1, 0},
+                           {-1,  1, 0, 1,    0, 1}, { 1,  1, 0, 1,    1, 1}};
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        glGenVertexArrays(1, texture_vao);
+        glBindVertexArray(*texture_vao);
+
+        glGenBuffers(1, texture_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, *texture_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex_t), 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t), (void*) offsetof(vertex_t, u));
+        glEnableVertexAttribArray(1);
+    }
+
+    /* create vertex shader */
+    unsigned int* vertex_shader_id = &state->vertex_shader_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        *vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
+        const char* vs_source = "#version 430 core\n"
+            "layout(location=0) in vec4 pos;\n"
+            "layout(location=1) in vec2 tex_pos;\n"
+            "out vec2 o_tex_coord;\n"
+            "void main(void) {\n"
+            "gl_Position = pos;\n"
+            "o_tex_coord = tex_pos;\n"
+            "}";
+        glShaderSource(*vertex_shader_id, 1, &vs_source, NULL);
+        glCompileShader(*vertex_shader_id);
+
+        /* print compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(*vertex_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(*vertex_shader_id, 512, NULL, infoLog);
+            printf("Vertex shader compilation failed: %s\n", infoLog);
+        };
+    }
+
+    /* create fragment shader */
+    unsigned int* frag_shader_id = &state->frag_shader_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        *frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
+        const char* fs_source = "#version 430 core\n"
+                                "in vec2 o_tex_coord;\n"
+                                "out vec4 color;\n"
+                                "uniform sampler2D u_texture;\n"
+                                "void main(void) {\n"
+                                "color = texture(u_texture, o_tex_coord);\n"
+                                //"color = vec4(1.0,0.0,0.0,1.0);\n"
+                                "}";
+        glShaderSource(*frag_shader_id, 1, &fs_source, NULL);
+        glCompileShader(*frag_shader_id);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(*frag_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(*frag_shader_id, 512, NULL, infoLog);
+            printf("Fragment shader compilation failed: %s\n", infoLog);
+        };
+    }
+
+    /* create shader */
+    unsigned int* shader_program_id = &state->shader_program_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        *shader_program_id = glCreateProgram();
+        glAttachShader(*shader_program_id, *vertex_shader_id);
+        glAttachShader(*shader_program_id, *frag_shader_id);
+        glLinkProgram(*shader_program_id);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetProgramiv(*shader_program_id, GL_LINK_STATUS, &success);
+        if(!success)
+        {
+            glGetProgramInfoLog(*shader_program_id, 512, NULL, infoLog);
+            printf("Shader linking failed: %s\n", infoLog);
+        }
+    }
 }
 
+void on_reload(state_t* state)
+{
+    /* create compute shader & program */
+    unsigned int* compute_shader_id = &state->compute_shader_id;
+    unsigned int* cs_program_id     = &state->cs_program_id;
+    {
+        assert(glGetError() == GL_NO_ERROR);
+
+        glActiveTexture(GL_TEXTURE0 + 0);
+        glBindTexture(GL_TEXTURE_2D, state->texture_id);
+        glBindImageTexture(0, state->texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, state->texture_format);
+
+        assert(glGetError() == GL_NO_ERROR);
+
+        *compute_shader_id = glCreateShader(GL_COMPUTE_SHADER);
+        const char* cs_source = "#version 430\n"
+                                "writeonly uniform image2D output_texture;\n"
+                                "layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;\n"
+                                "void main() {\n"
+                                "    uint x = gl_GlobalInvocationID.x;\n"
+                                "    uint y = gl_GlobalInvocationID.y;\n"
+                                "    imageStore(output_texture, ivec2(x, y), vec4(1,0,1,1));\n"
+                                "}\n";
+        glShaderSource(*compute_shader_id, 1, &cs_source, NULL);
+        glCompileShader(*compute_shader_id);
+
+        assert(glGetError() == GL_NO_ERROR);
+
+        /* print any compile errors */
+        int success;
+        char infoLog[512];
+        glGetShaderiv(*compute_shader_id, GL_COMPILE_STATUS, &success);
+        if(!success)
+        {
+            glGetShaderInfoLog(*compute_shader_id, 512, NULL, infoLog);
+            printf("Compute shader compilation failed: %s\n", infoLog);
+        };
+
+        *cs_program_id = glCreateProgram();
+        glAttachShader(*cs_program_id, *compute_shader_id);
+        glLinkProgram(*cs_program_id);
+        glDeleteShader(*compute_shader_id);
+
+        /* print any linking errors */
+        glGetProgramiv(*cs_program_id, GL_LINK_STATUS, &success);
+        if(!success)
+        {
+            glGetProgramInfoLog(*cs_program_id, 512, NULL, infoLog);
+            printf("Shader linking failed: %s\n", infoLog);
+        }
+
+        glUseProgram(*cs_program_id);
+
+        assert(glGetError() == GL_NO_ERROR);
+    }
+}
+
+void draw(state_t* state)
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glUseProgram(state->cs_program_id);
+    /* TODO upload uniforms */
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    #define WORK_GROUP_SIZE 16
+    glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glUseProgram(state->shader_program_id);
+    //glActiveTexture(GL_TEXTURE0 + 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, state->texture_vbo);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+
+//#ifdef COMPILE_EXE
+#include <stdlib.h>
 int main()
 {
-    /* init glfw & glew */
+    /* init glfw */
     GLFWwindow* window;
     {
         if (!glfwInit()) { printf("Failed to initalize glfw.\n"); }
@@ -48,218 +278,24 @@ int main()
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwMakeContextCurrent(window);
         glfwSwapInterval(1); // VSYNC = 1
-
-        glewExperimental = GL_TRUE;
-        if (glewInit() != GLEW_OK) { printf("Failed to initialize glew.\n"); }
-
-        const GLubyte* renderer = glGetString( GL_RENDERER );
-        const GLubyte* version  = glGetString( GL_VERSION );
-        printf("Renderer: %s\n", renderer);
-        printf("OpenGL version %s\n", version);
     }
 
-    /* enable debugging abilities */
-    {
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(gl_debug_callback, NULL);
-    }
+    state_t* state = malloc(1024 * 1024);
+    on_load(state);
 
-    /* create texture */
-    unsigned int texture_id;
-    unsigned int texture_format = GL_RGBA8;
-    {
-        assert(glGetError() == GL_NO_ERROR);
+    on_reload(state);
 
-        //glEnable(GL_TEXTURE_2D); // NOTE: causes error...
-        glGenTextures(1, &texture_id);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture_id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-        //glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    /* generate vao & vbo for texture */
-    unsigned int texture_vbo;
-    unsigned int texture_vao;
-    vertex_t vertices[] = {{-1, -1, 0, 1,    0, 0}, { 1, -1, 0, 1,    1, 0},
-                           {-1,  1, 0, 1,    0, 1}, { 1,  1, 0, 1,    1, 1}};
-    {
-        assert(glGetError() == GL_NO_ERROR);
-
-        glGenVertexArrays(1, &texture_vao);
-        glBindVertexArray(texture_vao);
-
-        glGenBuffers(1, &texture_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex_t), 0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t), (void*) offsetof(vertex_t, u));
-        glEnableVertexAttribArray(1);
-    }
-
-    /* create vertex shader */
-    unsigned int vertex_shader_id;
-    {
-        assert(glGetError() == GL_NO_ERROR);
-
-        vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-        const char* vs_source = "#version 430 core\n"
-            "layout(location=0) in vec4 pos;\n"
-            "layout(location=1) in vec2 tex_pos;\n"
-            "out vec2 o_tex_coord;\n"
-            "void main(void) {\n"
-            "gl_Position = pos;\n"
-            "o_tex_coord = tex_pos;\n"
-            "}";
-        glShaderSource(vertex_shader_id, 1, &vs_source, NULL);
-        glCompileShader(vertex_shader_id);
-
-        /* print compile errors */
-        int success;
-        char infoLog[512];
-        glGetShaderiv(vertex_shader_id, GL_COMPILE_STATUS, &success);
-        if(!success)
-        {
-            glGetShaderInfoLog(vertex_shader_id, 512, NULL, infoLog);
-            printf("Vertex shader compilation failed: %s\n", infoLog);
-        };
-    }
-
-    /* create fragment shader */
-    unsigned int frag_shader_id;
-    {
-        assert(glGetError() == GL_NO_ERROR);
-
-        frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-        const char* fs_source = "#version 430 core\n"
-                                "in vec2 o_tex_coord;\n"
-                                "out vec4 color;\n"
-                                "uniform sampler2D u_texture;\n"
-                                "void main(void) {\n"
-                                "color = texture(u_texture, o_tex_coord);\n"
-                                //"color = vec4(1.0,0.0,0.0,1.0);\n"
-                                "}";
-        glShaderSource(frag_shader_id, 1, &fs_source, NULL);
-        glCompileShader(frag_shader_id);
-
-        /* print any compile errors */
-        int success;
-        char infoLog[512];
-        glGetShaderiv(frag_shader_id, GL_COMPILE_STATUS, &success);
-        if(!success)
-        {
-            glGetShaderInfoLog(frag_shader_id, 512, NULL, infoLog);
-            printf("Fragment shader compilation failed: %s\n", infoLog);
-        };
-    }
-
-    /* create shader */
-    unsigned int shader_program_id;
-    {
-        assert(glGetError() == GL_NO_ERROR);
-
-        shader_program_id = glCreateProgram();
-        glAttachShader(shader_program_id, vertex_shader_id);
-        glAttachShader(shader_program_id, frag_shader_id);
-        glLinkProgram(shader_program_id);
-
-        /* print any compile errors */
-        int success;
-        char infoLog[512];
-        glGetProgramiv(shader_program_id, GL_LINK_STATUS, &success);
-        if(!success)
-        {
-            glGetProgramInfoLog(shader_program_id, 512, NULL, infoLog);
-            printf("Shader linking failed: %s\n", infoLog);
-        }
-    }
-
-    /* create compute shader & program */
-    GLuint storage_buffer_ids[3];
-    unsigned int compute_shader_id;
-    unsigned int cs_program_id;
-    {
-        assert(glGetError() == GL_NO_ERROR);
-
-        glActiveTexture(GL_TEXTURE0 + 0);
-        glBindTexture(GL_TEXTURE_2D, texture_id);
-        glBindImageTexture(0, texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, texture_format);
-
-        assert(glGetError() == GL_NO_ERROR);
-
-        compute_shader_id = glCreateShader(GL_COMPUTE_SHADER);
-        const char* cs_source = "#version 430\n"
-                                "writeonly uniform image2D output_texture;\n"
-                                "layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;\n"
-                                "void main() {\n"
-                                "    uint x = gl_GlobalInvocationID.x;\n"
-                                "    uint y = gl_GlobalInvocationID.y;\n"
-                                "    imageStore(output_texture, ivec2(x, y), vec4(1,0,1,1));\n"
-                                "}\n";
-        glShaderSource(compute_shader_id, 1, &cs_source, NULL);
-        glCompileShader(compute_shader_id);
-
-        assert(glGetError() == GL_NO_ERROR);
-
-        /* print any compile errors */
-        int success;
-        char infoLog[512];
-        glGetShaderiv(compute_shader_id, GL_COMPILE_STATUS, &success);
-        if(!success)
-        {
-            glGetShaderInfoLog(compute_shader_id, 512, NULL, infoLog);
-            printf("Compute shader compilation failed: %s\n", infoLog);
-        };
-
-        cs_program_id = glCreateProgram();
-        glAttachShader(cs_program_id, compute_shader_id);
-        glLinkProgram(cs_program_id);
-        glDeleteShader(compute_shader_id);
-
-        /* print any linking errors */
-        glGetProgramiv(cs_program_id, GL_LINK_STATUS, &success);
-        if(!success)
-        {
-            glGetProgramInfoLog(cs_program_id, 512, NULL, infoLog);
-            printf("Shader linking failed: %s\n", infoLog);
-        }
-
-        glUseProgram(cs_program_id);
-
-        assert(glGetError() == GL_NO_ERROR);
-    }
-
-    int running = 1;
     while (!glfwWindowShouldClose(window))
     {
+        //if (dll changed on disk) { on_reload(); }
+
         /* poll events */
         {
             glfwPollEvents();
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
         }
 
-        glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
-        glUseProgram(cs_program_id);
-        /* TODO upload uniforms */
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        #define WORK_GROUP_SIZE 16
-        glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-        glUseProgram(shader_program_id);
-        //glActiveTexture(GL_TEXTURE0 + 0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        draw(state);
 
         glfwSwapBuffers(window);
     }
@@ -268,3 +304,4 @@ int main()
 
     return 0;
 };
+//#endif
