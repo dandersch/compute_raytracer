@@ -237,21 +237,24 @@ EXPORT int on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
     }
 
-    struct test_t
-    {
-        float a;
-        float b;
-        float c;
-    };
-    typedef struct test_t test_t;
-    #define TEST_COUNT 2
-    test_t test_buf[TEST_COUNT] = {{0.5,0,0}, {1,1,1}};
+    _Pragma ("pack(push,1)")
+    struct vec3 { float x; float y; float z; };
+    typedef struct vec3 vec3;
+    /* NOTE: we need to comply with std430 layout */
+    struct triangle_t { vec3 a; float _1; vec3 b; float _2; vec3 c; float _3; float color[4]; };
+    _Pragma ("pack(pop)")
+    typedef struct triangle_t triangle_t;
+    #define TRIANGLE_COUNT 1
+    triangle_t triangle_buf[TRIANGLE_COUNT] = {{{ 0.5,   0, -10}, 0,
+                                                {   0, 0.5, -10}, 0,
+                                                {-0.5,   0, -10}, 0,
+                                                {0,1,0,1}}};
     /* upload buffers to compute shader */
     {
         GLuint ssbo; // shader storage buffer object
         glGenBuffers(1, &ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(test_t) * TEST_COUNT, test_buf, GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(triangle_t) * TRIANGLE_COUNT, triangle_buf, GL_STATIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
     }
 

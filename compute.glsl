@@ -1,14 +1,17 @@
 SHADER_STRINGIFY(
+
 writeonly uniform image2D output_texture;
 
-struct test_t {
-    float a;
-    float b;
-    float c;
+struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
+
 };
 
-layout(std430, binding = 0) buffer test_buf {
-    test_t test_array[];
+layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
+
+/* r = o + d * t */
+struct ray_t {
+  vec3 origin;
+  vec3 dir;
 };
 
 //layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
