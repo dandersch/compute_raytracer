@@ -11,6 +11,8 @@ struct camera_t
 };
 
 //uniform camera_t camera; // TODO
+uniform uint width;
+uniform uint height;
 //uniform uint triangle_count; // TODO
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
 
@@ -45,8 +47,26 @@ void main() {
 
     float col1 = x/640.0;
     float col2 = y/360.0;
-    float col3 = test_array[0].a;
 
-    imageStore(output_texture, ivec2(x, y), vec4(col1, col2, col3, 1));
+    vec4 color = vec4(0.f); // final color of pixel on texture
+
+    /* init ray */
+    ray_t ray;
+    camera_t camera; // TODO as uniform
+    camera.pos = vec4( 0, 0, 0,1);
+    camera.dir = vec4( 0, 0,-1,1);
+    uint triangle_count = 1; // TODO as uniform
+    {
+        // Calculate normalized device coordinates (NDC) from pixel coordinates
+        vec2 ndc = vec2((x + 0.5) / 640, (y + 0.5) / 360); // TODO hardcoded width and height
+
+        ray.origin = camera.pos.xyz;
+
+        vec3 ray_dir_in_camera_space = normalize(camera.dir.xyz);
+
+        // ray origin in world space based on pixel coordinates
+        ray.origin += ray_dir_in_camera_space * 2.0 * ndc.x - camera.dir.xyz;
+        ray.dir = ray_dir_in_camera_space;
+    }
 }
 )
