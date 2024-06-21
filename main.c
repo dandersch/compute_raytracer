@@ -14,6 +14,12 @@ typedef struct vertex_t
     float u,v;
 } vertex_t;
 
+
+typedef struct test_t
+{
+    float color[4];
+} test_t;
+
 void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id,
                                   GLenum severity, GLsizei length,
                                   const GLchar* message, const void* userParam)
@@ -79,10 +85,8 @@ int main()
     /* generate vao & vbo for texture */
     unsigned int texture_vbo;
     unsigned int texture_vao;
-    vertex_t vertices[] = {{-1, -1, 0, 1,    0, 0},
-                           { 1, -1, 0, 1,    1, 0},
-                           {-1,  1, 0, 1,    0, 1},
-                           { 1,  1, 0, 1,    1, 1}};
+    vertex_t vertices[] = {{-1, -1, 0, 1,    0, 0}, { 1, -1, 0, 1,    1, 0},
+                           {-1,  1, 0, 1,    0, 1}, { 1,  1, 0, 1,    1, 1}};
     {
         assert(glGetError() == GL_NO_ERROR);
 
@@ -232,8 +236,14 @@ int main()
     }
 
     int running = 1;
-    while (running)
+    while (!glfwWindowShouldClose(window))
     {
+        /* poll events */
+        {
+            glfwPollEvents();
+            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
+        }
+
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -250,9 +260,6 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        running++;
-        if (running > 100) { running = 0; }
 
         glfwSwapBuffers(window);
     }
