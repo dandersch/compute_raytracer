@@ -8,6 +8,13 @@
 #define WINDOW_WIDTH  (1280/2)
 #define WINDOW_HEIGHT (720/2)
 
+#ifdef COMPILE_DLL
+#if defined(_MSC_VER)
+    #define EXPORT __declspec(dllexport)
+#else
+    #define EXPORT __attribute__((visibility("default")))
+#endif
+
 typedef struct vertex_t
 {
     float x,y,z,w;
@@ -40,7 +47,7 @@ typedef struct state_t
     unsigned int cs_program_id;
 } state_t;
 
-void on_load(state_t* state)
+EXPORT void on_load(state_t* state)
 {
     /* init glew */
     {
@@ -175,10 +182,7 @@ void on_load(state_t* state)
             printf("Shader linking failed: %s\n", infoLog);
         }
     }
-}
 
-void on_reload(state_t* state)
-{
     /* create compute shader & program */
     unsigned int* compute_shader_id = &state->compute_shader_id;
     unsigned int* cs_program_id     = &state->cs_program_id;
@@ -188,6 +192,7 @@ void on_reload(state_t* state)
         glActiveTexture(GL_TEXTURE0 + 0);
         glBindTexture(GL_TEXTURE_2D, state->texture_id);
         glBindImageTexture(0, state->texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, state->texture_format);
+
 
         assert(glGetError() == GL_NO_ERROR);
 
@@ -234,7 +239,7 @@ void on_reload(state_t* state)
     }
 }
 
-void draw(state_t* state)
+EXPORT void draw(state_t* state)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -253,10 +258,23 @@ void draw(state_t* state)
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
+#endif /* COMPILE_DLL */
 
 
-//#ifdef COMPILE_EXE
+#ifdef COMPILE_EXE
+#ifndef COMPILE_DLL
+#include <dlfcn.h>
+#include <sys/stat.h>
+#define DLL_FILENAME "./code.dll"
+static void*  dll_handle;
+static time_t dll_last_mod;
+typedef struct state_t state_t;
+static void (*on_load)(state_t*);
+static void (*draw)(state_t*);
+#endif
+
 #include <stdlib.h>
+#include <stdio.h>
 int main()
 {
     /* init glfw */
@@ -280,14 +298,47 @@ int main()
         glfwSwapInterval(1); // VSYNC = 1
     }
 
+    #ifndef COMPILE_DLL
+    /* load in dll */
+    dll_handle   = dlopen(DLL_FILENAME, RTLD_NOW);
+    on_load      = dlsym(dll_handle, "on_load");
+    draw         = dlsym(dll_handle, "draw");
+    struct stat attr;
+    stat(DLL_FILENAME, &attr);
+    dll_last_mod = attr.st_mtime;
+    #endif
+
     state_t* state = malloc(1024 * 1024);
     on_load(state);
 
-    on_reload(state);
-
     while (!glfwWindowShouldClose(window))
     {
-        //if (dll changed on disk) { on_reload(); }
+        #ifndef COMPILE_DLL
+        /* check if dll has changed on disk */
+        if ((stat(DLL_FILENAME, &attr) == 0) && (dll_last_mod != attr.st_mtime))
+        {
+            printf("Attempting code hot reload...\n");
+
+            if (dll_handle) /* unload dll */
+            {
+                dlclose(dll_handle);
+                dll_handle = NULL;
+                on_load    = NULL;
+                draw       = NULL;
+            }
+            dll_handle = dlopen(DLL_FILENAME, RTLD_NOW);
+            if (dll_handle == NULL) { printf("Opening DLL failed. Trying again...\n"); }
+            while (dll_handle == NULL) /* NOTE keep trying to load dll */
+            {
+                dll_handle = dlopen(DLL_FILENAME, RTLD_NOW);
+            }
+            on_load      = dlsym(dll_handle, "on_load");
+            draw         = dlsym(dll_handle, "draw");
+
+            on_load(state);
+            dll_last_mod = attr.st_mtime;
+        }
+        #endif
 
         /* poll events */
         {
@@ -304,4 +355,4 @@ int main()
 
     return 0;
 };
-//#endif
+#endif /* COMPILE_EXE */
