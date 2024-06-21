@@ -61,10 +61,6 @@ int main()
     /* create texture */
     unsigned int texture_id;
     unsigned int texture_format = GL_RGBA8;
-    unsigned char texture[4][4] = {{255,  0,  0,255},
-                                   {255,  0,255,255},
-                                   {  0,255,  0,255},
-                                   {  0,255,255,255}};
     {
         assert(glGetError() == GL_NO_ERROR);
 
@@ -76,8 +72,7 @@ int main()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        //glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-        glTexImage2D(GL_TEXTURE_2D, 0, texture_format, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture_format, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         //glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -201,7 +196,7 @@ int main()
                                 "void main() {\n"
                                 "    uint x = gl_GlobalInvocationID.x;\n"
                                 "    uint y = gl_GlobalInvocationID.y;\n"
-                                "    imageStore(output_texture, ivec2(x, y), vec4(0,1,0,1));\n"
+                                "    imageStore(output_texture, ivec2(x, y), vec4(1,0,1,1));\n"
                                 "}\n";
         glShaderSource(compute_shader_id, 1, &cs_source, NULL);
         glCompileShader(compute_shader_id);
@@ -241,6 +236,13 @@ int main()
     {
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        glUseProgram(cs_program_id);
+        /* TODO upload uniforms */
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        #define WORK_GROUP_SIZE 16
+        glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
         glUseProgram(shader_program_id);
         //glActiveTexture(GL_TEXTURE0 + 0);
