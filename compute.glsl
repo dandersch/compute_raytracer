@@ -133,7 +133,8 @@ vec4 shade(ray_t r, hit_t hit, int index)
         }
     }
 
-    //color = mat.color;
+    const float ambient_light_intensity = 0.1;
+    color += ambient_light_intensity * mat.color;
 
     return color;
 }
