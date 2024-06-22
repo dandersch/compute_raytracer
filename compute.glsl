@@ -21,6 +21,7 @@ const float FLOAT_MAX       = 3.402823466e+38;
 const uint  WIDTH           = WINDOW_WIDTH;    // from common.h
 const uint  HEIGHT          = WINDOW_HEIGHT;   // from common.h
 const uint  primitive_count = PRIMITIVE_COUNT; // from common.h
+const uint  light_count     = LIGHT_COUNT;     // from common.h
 
 hit_t ray_sphere_intersection(ray_t r, sphere_t s)
 {
@@ -101,9 +102,43 @@ vec4 shade(ray_t r, hit_t hit, int index)
     // TODO implement different shaders
     switch (prims[index].mat.type)
     {
-        case MATERIAL_TYPE_DIFFUSE:  { color = mat.color; } break;
-        case MATERIAL_TYPE_SPECULAR: { color = mat.color; } break;
+        case MATERIAL_TYPE_DIFFUSE:  { } break;
+        case MATERIAL_TYPE_SPECULAR: { } break;
     }
+
+    for (int i = 0; i < light_count; i++)
+    {
+        vec3 to_light = normalize(lights[i].pos - intersection);
+
+        ray_t ray_to_light = {intersection, to_light};
+        bool is_in_shadow  = false;
+
+        for (int prim_idx = 0; prim_idx < primitive_count; prim_idx++)
+        {
+            hit_t temp = {FLOAT_MAX, vec3(0)};
+            switch (prims[prim_idx].type)
+            {
+                case PRIMITIVE_TYPE_TRIANGLE: { temp = ray_triangle_intersection(ray_to_light, prims[prim_idx].t); } break;
+                case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray_to_light,   prims[prim_idx].s); } break;
+                default: { } break;
+            }
+
+            if (temp.t < FLOAT_MAX && temp.t >= EPSILON && temp.t < length(intersection - lights[i].pos))
+            {
+                is_in_shadow = true;
+            }
+        }
+
+        if (!is_in_shadow)
+        {
+            float dist = length(lights[i].pos - intersection);
+
+            color += lights[i].p.intensity * mat.color;
+            color += lights[i].p.intensity * lights[i].color;
+        }
+    }
+
+    //color = mat.color;
 
     return color;
 }

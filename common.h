@@ -6,8 +6,8 @@
  * NOTE: Can also contain e.g. helper functions that are shared between shaders.
  */
 #define WINDOW_TITLE "compute raytracer"
-#define WINDOW_WIDTH  1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH  640
+#define WINDOW_HEIGHT 640
 #define CAMERA_FOV     90
 #define PRIMITIVE_COUNT 15 // size of prim_buf
 #define LIGHT_COUNT      3 // size of light_buf
@@ -36,7 +36,9 @@
  * _Pragma ("pack(push,n)") _Pragma ("pack(pop)") when expanding the macro on the C-side.
  */
 T(camera_t,     { vec4 pos;                          vec4 dir;                                                           })
+
 T(material_t,   { uint type; float spec; float _[2]; vec4 color;                                                         })
+
 T(sphere_t,     { vec3 pos; float radius;                                                                                })
 T(triangle_t,   { vec3 a; float _1;                  vec3 b; float _2; vec3 c; float _3;                                 })
 T(primitive_t,  { uint type; float _unused[3];       sphere_t s;                         triangle_t t;   material_t mat; })

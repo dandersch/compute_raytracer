@@ -395,7 +395,15 @@ EXPORT int on_load(state_t* state)
                                      {{{ 5, 5, -5}}}, 0};
         prim_buf[i].mat.type = MATERIAL_TYPE_DIFFUSE;
         prim_buf[i].mat.color = (vec4){{{0.3, 0.3, 0.3, 1}}};
+    }
 
+    {
+        int i = 0;
+        light_buf[i].type           = LIGHT_TYPE_POINT;
+        light_buf[i].p.intensity    = 0.08f;
+        light_buf[i].pos            = (vec3){{{0.8, -4.9, -3}}}; // above sphere
+        //light_buf[i].pos            = (vec3){{{2.5, -4.9, 2.5}}};
+        light_buf[i].color          = (vec4){{{1,1,0.7,1}}};
     }
 
     /* upload buffers to compute shader */
