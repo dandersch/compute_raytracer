@@ -60,7 +60,8 @@ void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    vec4 color = vec4(0); // final color of pixel on texture
+    const vec4 background_color = vec4(0.3,0.2,0,1);
+    vec4 color = background_color; // final color of pixel on texture
 
     /* init ray */
     ray_t ray;

@@ -26,16 +26,14 @@ typedef struct vertex_t
     float u,v;
 } vertex_t;
 
+
+typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
 struct camera_t
 {
-    float pos[4];
-    float dir[4];
+    vec4 pos;
+    vec4 dir;
     int width;
     int height;
-    float rotation_x;
-    float rotation_y;
-    float sensitivity;
-    float move_speed;
 };
 typedef struct camera_t camera_t;
 
@@ -288,28 +286,56 @@ EXPORT int on_load(state_t* state)
     /* upload uniforms */
     camera_t* camera = &state->camera;
     //camera->pos[0] = 1; camera->pos[1] = 0; camera->pos[2] = 0; camera->pos[3] = 1;
-    camera->dir[0] = 0; camera->dir[1] = 0; camera->dir[2] =-1; camera->dir[3] = 1;
+    camera->dir.x = 0; camera->dir.y = 0; camera->dir.z =-1; camera->dir.w = 1;
     {
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos[0], camera->pos[1], camera->pos[2], camera->pos[3]);
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir[0], camera->dir[1], camera->dir[2], camera->dir[3]);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos.x, camera->pos.y, camera->pos.z, camera->pos.w);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir.x, camera->dir.y, camera->dir.z, camera->dir.w);
     }
 
     return 1;
 }
 
-EXPORT void update(state_t* state, char input)
+/* helper */
+vec4 vec4_add(const vec4 lhs, const vec4 rhs) { vec4 ret = {{{lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w}}}; return ret; }
+vec4 vec4_sub(const vec4 lhs, const vec4 rhs) { vec4 ret = {{{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w}}}; return ret; }
+vec4 vec4_cross(const vec4 v1, vec4 v2) { vec4 ret = {{{v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x, 1.0f}}}; return ret; }
+
+#include <math.h> // for fmod, sqrt, atan2, cos, sin, ...
+EXPORT void update(state_t* state, char input, double delta_cursor_x, double delta_cursor_y)
 {
-    enum { X, Y, Z, W };
+    vec4* dir = &state->camera.dir;
+    /* rotate_camera */
+    {
+        const float rot_speed = 0.005f; // NOTE hardcoded rotation speed
+
+        /* rotate around Y axis */
+        float yaw = atan2(dir->z, dir->x);
+        yaw += delta_cursor_x * rot_speed;
+        dir->x = cos(yaw);
+        dir->z = sin(yaw);
+
+        /* rotate around X axis */
+        float pitch = atan2(dir->y, sqrt(dir->x * dir->x + dir->z * dir->z));
+        pitch -= delta_cursor_y * rot_speed;
+        if (pitch > M_PI / 2)  { pitch =  M_PI / 2; }
+        if (pitch < -M_PI / 2) { pitch = -M_PI / 2; }
+        dir->x = cos(pitch) * cos(yaw);
+        dir->y = sin(pitch);
+        dir->z = cos(pitch) * sin(yaw);
+    }
+
     switch(input)
     {
-        case 'w': { state->camera.pos[Z] -= 0.5; } break;
-        case 'a': { state->camera.pos[X] -= 0.5; } break;
-        case 's': { state->camera.pos[Z] += 0.5; } break;
-        case 'd': { state->camera.pos[X] += 0.5; } break;
-        case 'q': { state->camera.pos[Y] += 0.5; } break;
-        case 'e': { state->camera.pos[Y] -= 0.5; } break;
+        case 'w': { state->camera.pos = vec4_add(state->camera.pos, *dir); } break;
+        case 'a': { state->camera.pos = vec4_sub(state->camera.pos, vec4_cross(*dir, (vec4){{{0,1,0,1}}})); } break;
+        case 's': { state->camera.pos = vec4_sub(state->camera.pos, *dir); } break;
+        case 'd': { state->camera.pos = vec4_add(state->camera.pos, vec4_cross(*dir, (vec4){{{0,1,0,1}}})); } break;
+        case 'q': { state->camera.pos.y += 0.5; } break;
+        case 'e': { state->camera.pos.y -= 0.5; } break;
         default: {} break;
     }
+
+
 }
 
 EXPORT void draw(state_t* state)
@@ -323,8 +349,8 @@ EXPORT void draw(state_t* state)
     {
         camera_t* camera                = &state->camera;
         unsigned int* cs_program_id     = &state->cs_program_id;
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos[0], camera->pos[1], camera->pos[2], camera->pos[3]);
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir[0], camera->dir[1], camera->dir[2], camera->dir[3]);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos.x, camera->pos.y, camera->pos.z, camera->pos.w);
+        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir.x, camera->dir.y, camera->dir.z, camera->dir.w);
     }
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -351,7 +377,7 @@ static void*  dll_handle;
 static time_t dll_last_mod;
 typedef struct state_t state_t;
 static int  (*on_load)(state_t*);
-static void (*update)(state_t*, char);
+static void (*update)(state_t*, char, double, double);
 static void (*draw)(state_t*);
 #endif
 
@@ -429,10 +455,13 @@ int main()
         #endif
 
         /* poll events */
+        static double cursor_x = 0, cursor_y = 0;
         {
             char input = ' ';
 
             glfwPollEvents();
+
+            /* key inputs */
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
             if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)      { input = 'w'; }
             if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)      { input = 'a'; }
@@ -441,7 +470,15 @@ int main()
             if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)      { input = 'q'; }
             if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)      { input = 'e'; }
 
-            update(state, input);
+            /* cursor pos */
+            double x,y;
+            glfwGetCursorPos(window, &x, &y);
+            double dx = x - cursor_x;
+            double dy = y - cursor_y;
+            cursor_x = x;
+            cursor_y = y;
+
+            update(state, input, dx, dy);
         }
 
         draw(state);

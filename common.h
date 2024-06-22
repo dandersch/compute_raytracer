@@ -7,10 +7,11 @@
  * all centralized in this file and we don't have to pass them in as uniforms.
  *
  * NOTE: we could go even further with this and have centralized struct definitions...
+ * NOTE: Can also contain e.g. helper functions that are shared between shaders.
  */
   #define WINDOW_TITLE "compute raytracer"
-  #define WINDOW_WIDTH  1080
-S(#define WINDOW_WIDTH  1080)
+  #define WINDOW_WIDTH  640
+S(#define WINDOW_WIDTH  640)
   #define WINDOW_HEIGHT 640
 S(#define WINDOW_HEIGHT 640)
   #define TRIANGLE_COUNT 3
