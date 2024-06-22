@@ -146,7 +146,7 @@ void main() {
     /* check for intersections */
     uint reflection_depth = 3;
     {
-        for (uint n = 0; n < reflection_depth; ++n)
+        for (uint n = 0; n < reflection_depth; n++)
         {
             int tri_idx = -1; // TODO rename
             int a,b;
@@ -162,7 +162,7 @@ void main() {
                     case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray, prims[i].s);   } break;
                 }
 
-                if (temp.t < hit.t && hit.t >= -EPSILON) {
+                if (temp.t < hit.t && temp.t >= EPSILON) {
                     hit     = temp;
                     tri_idx = i;
                 }
