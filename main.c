@@ -21,6 +21,15 @@ typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; 
 #define SHADER_VERSION_STRING "#version 430 core\n"
 
 
+char teapot_obj[] =
+                   #include "teapot.obj.inc"
+                   ;
+
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
+#include "tinyobj_loader_c.h"
+
+primitive_t prim_buf[PRIMITIVE_COUNT];
+
 #ifdef COMPILE_DLL
 #if defined(_MSC_VER)
     #define EXPORT __declspec(dllexport)
@@ -68,8 +77,28 @@ typedef struct state_t
     camera_t camera;
 } state_t;
 
+void get_file_data(void* c, const char* f, int m, const char* o, char **buf, size_t *len) { *buf = teapot_obj; *len = sizeof(teapot_obj);}
 EXPORT int on_load(state_t* state)
 {
+    tinyobj_attrib_t attrib;
+    tinyobj_shape_t* shapes = NULL;
+    size_t num_shapes;
+    tinyobj_material_t* materials = NULL;
+    size_t num_materials;
+    unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
+
+    int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
+                                &num_materials, "teapot.obj", get_file_data, NULL, flags);
+    if (ret != TINYOBJ_SUCCESS) {
+        printf("Failure\n");
+        return 0;
+    }
+    printf("# of shapes    = %d\n", (int)num_shapes);
+    printf("# of materials = %d\n", (int)num_materials);
+    printf("# of vertices = %d\n", attrib.num_vertices);
+    printf("# of faces    = %d\n", attrib.num_faces);
+
+
     /* init glew */
     {
         glewExperimental = GL_TRUE;
