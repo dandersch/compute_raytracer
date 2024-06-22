@@ -1,8 +1,8 @@
 SHADER_VERSION_STRING
 #include "common.h"
-STR(
-writeonly uniform image2D output_texture;
+S(
 
+writeonly uniform image2D output_texture;
 
 struct camera_t { vec4 pos; vec4 dir; };
 uniform camera_t camera;

@@ -9,25 +9,19 @@ typedef unsigned int uint;
 typedef struct vec3 { union { struct { float x,y,z; }; float e[3]; }; } vec3;
 typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
 
-#define S(x)
 #define T(name, def) typedef struct name def name;
 #include "common.h"
-#undef S
 #undef T
 
-#define _STRINGIZE(...) #__VA_ARGS__ "\n"
-#define STR(...) _STRINGIZE(__VA_ARGS__)
-
-#define S(x) #x "\n" // STRINGIFY for common defines
+#define _STRINGIFY(...) #__VA_ARGS__ "\n"
+#define S(...) _STRINGIFY(__VA_ARGS__)
 #define T(name,def) "struct " #name " " #def ";\n"
-#define SHADER_STRINGIFY(x) "#version 430 core\n" S(x)
 #define SHADER_VERSION_STRING "#version 430 core\n"
 
 
 char teapot_obj[] =
                    #include "teapot.obj.inc"
                    ;
-
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobj_loader_c.h"
 
@@ -165,14 +159,14 @@ EXPORT int on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
 
         *vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-        const char* vs_source = SHADER_STRINGIFY(
-            layout(location=0) in vec4 pos;
-            layout(location=1) in vec2 tex_pos;
-            out vec2 o_tex_coord;
-            void main(void) {
-            gl_Position = pos;
-            o_tex_coord = tex_pos;
-            });
+        const char* vs_source = SHADER_VERSION_STRING S(
+                                  layout(location=0) in vec4 pos;
+                                  layout(location=1) in vec2 tex_pos;
+                                  out vec2 o_tex_coord;
+                                  void main(void) {
+                                  gl_Position = pos;
+                                  o_tex_coord = tex_pos;
+                                });
         glShaderSource(*vertex_shader_id, 1, &vs_source, NULL);
         glCompileShader(*vertex_shader_id);
 
@@ -193,13 +187,12 @@ EXPORT int on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
 
         *frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-        const char* fs_source = SHADER_STRINGIFY(
-                                in vec2 o_tex_coord;
-                                out vec4 color;
-                                uniform sampler2D u_texture;
-                                void main(void) {
-                                color = texture(u_texture, o_tex_coord);
-                                //color = vec4(1.0,0.0,0.0,1.0);
+        const char* fs_source = SHADER_VERSION_STRING S(
+                                  in vec2 o_tex_coord;
+                                  out vec4 color;
+                                  uniform sampler2D u_texture;
+                                  void main(void) {
+                                  color = texture(u_texture, o_tex_coord);
                                 });
         glShaderSource(*frag_shader_id, 1, &fs_source, NULL);
         glCompileShader(*frag_shader_id);
@@ -366,8 +359,6 @@ EXPORT void update(state_t* state, char input, double delta_cursor_x, double del
         case 'e': { state->camera.pos.y -= 0.5; } break;
         default: {} break;
     }
-
-
 }
 
 EXPORT void draw(state_t* state)
