@@ -144,7 +144,7 @@ void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    const vec4 background_color = vec4(0.1,0.4,0.2,1); // NOTE unused
+    const vec4 background_color = vec4(0.2,0.6,0.7,1);
     vec4 color = vec4(0); // final color of pixel on texture
 
     /* init ray */
@@ -225,12 +225,9 @@ void main() {
                 {
                     color += temp_color;
                 }
-            } else {
-                if (n == 0) /* we hit nothing but the background */
-                {
-                    color = background_color;
-                    break; /* early return */
-                }
+            } else { /* hit nothing but the background */
+                color = background_color;
+                break; /* early return */
             }
         }
     }
