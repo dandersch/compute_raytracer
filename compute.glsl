@@ -99,13 +99,7 @@ vec4 shade(ray_t r, hit_t hit, int index)
 
     vec3 intersection = r.origin + hit.t * r.dir;
 
-    // TODO implement different shaders
-    switch (prims[index].mat.type)
-    {
-        case MATERIAL_TYPE_DIFFUSE:  { } break;
-        case MATERIAL_TYPE_SPECULAR: { } break;
-    }
-
+    /* check if intersection is in shadow */
     for (int i = 0; i < light_count; i++)
     {
         vec3 to_light = normalize(lights[i].pos - intersection);
@@ -131,10 +125,11 @@ vec4 shade(ray_t r, hit_t hit, int index)
 
         if (!is_in_shadow)
         {
-            float dist = length(lights[i].pos - intersection);
+            float dist        = length(lights[i].pos - intersection);
+            float attenuation = lights[i].p.intensity/dist;
 
-            color += lights[i].p.intensity * mat.color;
-            color += lights[i].p.intensity * lights[i].color;
+            color += attenuation * mat.color;
+            color += attenuation * lights[i].color;
         }
     }
 
