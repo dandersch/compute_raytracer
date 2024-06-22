@@ -7,8 +7,7 @@ writeonly uniform image2D output_texture;
 struct camera_t { vec4 pos; vec4 dir; };
 uniform camera_t camera;
 
-
-layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
+layout(std430, binding = 0) buffer prim_buf { primitive_t prims[]; };
 
 struct ray_t { vec3 origin; vec3 dir; };
 
@@ -51,7 +50,7 @@ vec4 shade(ray_t r, float t, int index)
     vec3 intersection = r.origin + t * r.dir;
 
     // TODO implement different shaders
-    color = triangles[index].color;
+    color = prims[index].t.color;
 
     return color;
 }
@@ -102,12 +101,28 @@ void main() {
             float t     = FLOAT_MAX;
             float temp  = FLOAT_MAX;
 
-            /* compute intersection of ray and triangles */
+            /* compute intersection of ray and primitives */
             for (int i = 0; i < primitive_count; i++) {
-                temp = ray_triangle_intersection(ray, triangles[i]);
-                if (temp < t && temp >= -EPSILON) {
-                    t       = temp;
-                    tri_idx = i;
+
+                switch (prims[i].type)
+                {
+                    case PRIMITIVE_TYPE_TRIANGLE:
+                    {
+                        temp = ray_triangle_intersection(ray, prims[i].t);
+                        if (temp < t && temp >= -EPSILON) {
+                            t       = temp;
+                            tri_idx = i;
+                        }
+                    } break;
+
+                    case PRIMITIVE_TYPE_SPHERE:
+                    {
+                        //temp = ray_sphere_intersection(ray, prims[i].s);
+                        //if (temp < t && temp >= -EPSILON) {
+                        //    t       = temp;
+                        //    tri_idx = i;
+                        //}
+                    } break;
                 }
             }
 
