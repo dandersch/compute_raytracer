@@ -17,8 +17,8 @@ S(#define WINDOW_WIDTH  640)
 S(#define WINDOW_HEIGHT 640)
   #define CAMERA_FOV     90
 S(#define CAMERA_FOV     90)
-  #define PRIMITIVE_COUNT 3  // size of buffer
-S(#define PRIMITIVE_COUNT 3)
+  #define PRIMITIVE_COUNT 10  // size of buffer
+S(#define PRIMITIVE_COUNT 10)
   /* used for lack of enums in glsl */
   #define PRIMITIVE_TYPE_NONE      0
 S(#define PRIMITIVE_TYPE_NONE      0)

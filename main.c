@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h> // for memset
 
 typedef unsigned int uint;
 typedef struct vec3 { union { struct { float x,y,z; }; float e[3]; }; } vec3;
@@ -40,6 +41,8 @@ void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum 
 
 typedef struct state_t
 {
+    int initialized;
+
     /* create texture */
     unsigned int texture_id;
     unsigned int texture_format;
@@ -254,6 +257,7 @@ EXPORT int on_load(state_t* state)
     }
 
     primitive_t prim_buf[PRIMITIVE_COUNT];
+    memset(prim_buf, 0, sizeof(prim_buf)); // NOTE needs zero initialization
     prim_buf[0].type = PRIMITIVE_TYPE_TRIANGLE;
     prim_buf[0].t = (triangle_t){{{{ 0.7, 0.2, -10}}}, 0,
                                    {{{ 0.5, 0.7, -10}}}, 0,
@@ -269,6 +273,8 @@ EXPORT int on_load(state_t* state)
                                    {{{ 0.7, 0.8, -1}}}, 0,
                                    {{{ 0.5, 0.4, -1}}}, 0,
                                    {{{0,0,1,1}}} };
+    prim_buf[3].type = PRIMITIVE_TYPE_SPHERE;
+    prim_buf[3].s = (sphere_t){{{{ 0.8, 0.5, -3}}}, 1.0, {{{1,1,0,1}}} };
     /* upload buffers to compute shader */
     {
         GLuint ssbo; // shader storage buffer object
@@ -278,13 +284,12 @@ EXPORT int on_load(state_t* state)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
     }
 
-    /* upload uniforms */
-    camera_t* camera = &state->camera;
-    //camera->pos[0] = 1; camera->pos[1] = 0; camera->pos[2] = 0; camera->pos[3] = 1;
-    camera->dir.x = 0; camera->dir.y = 0; camera->dir.z =-1; camera->dir.w = 1;
+    if (!state->initialized)
     {
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.pos"), camera->pos.x, camera->pos.y, camera->pos.z, camera->pos.w);
-        glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir.x, camera->dir.y, camera->dir.z, camera->dir.w);
+        camera_t* camera = &state->camera;
+        camera->dir.x = 0; camera->dir.y = 0; camera->dir.z =-1; camera->dir.w = 1;
+
+        state->initialized = 1;
     }
 
     return 1;
@@ -416,6 +421,7 @@ int main()
     #endif
 
     state_t* state = malloc(1024 * 1024);
+    memset(state, 0, 1024 * 1024);
     on_load(state);
 
     while (!glfwWindowShouldClose(window))

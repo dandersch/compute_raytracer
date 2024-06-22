@@ -18,6 +18,54 @@ const uint  WIDTH           = WINDOW_WIDTH;    // from common.h
 const uint  HEIGHT          = WINDOW_HEIGHT;   // from common.h
 const uint  primitive_count = PRIMITIVE_COUNT; // from common.h
 
+float ray_sphere_intersection(ray_t r, sphere_t s)
+{
+    // NOTE algorithms behave differently when inside sphere
+    #if 1
+    vec3  difference   = r.origin - s.pos;
+    float a            = 1.0f;
+    float b            = 2.0f * dot(r.dir, difference);
+    float c            = dot(difference, difference) - s.radius * s.radius;
+    float discriminant = b * b - 4 * a * c;
+
+    // see if ray intersects at all
+    if (discriminant < 0) { return FLOAT_MAX; }
+    float root = sqrt(discriminant);
+
+    // solution
+    float q  = -0.5f * (b < 0 ? (b - root) : (b + root));
+    float t0 = q / a;
+    float t1 = c / q;
+    float t  = min(t0, t1);
+    if (t < EPSILON) { t = max(t0, t1); }
+
+    if (t < EPSILON) { return FLOAT_MAX; }
+
+    return t;
+
+    #else
+
+    vec3 sphere_to_ray = r.origin - s.pos;
+    float s_roc        = dot(r.dir, sphere_to_ray); // b
+    float s_oc         = dot(sphere_to_ray, sphere_to_ray);
+    float d            = s_roc * s_roc - s_oc + s.radius * s.radius;
+
+    if (d < 0) {
+      return FLOAT_MAX;
+    } else {
+      float t1 = sqrt(d);
+      float t2 = -s_roc - t1;
+      t1 = -s_roc + t1;
+
+      /* ray is in sphere */
+      if ((t1 < 0 && t2 > 0) || (t1 > 0 && t2 < 0)) { return FLOAT_MAX; }
+
+      if ((t2 > t1 ? t1 : t2) < 0) { return FLOAT_MAX;           }
+      else                         { return (t2 > t1 ? t1 : t2); }
+    }
+    #endif
+}
+
 float ray_triangle_intersection(ray_t r, triangle_t t)
 {
     vec3 a_to_b  = t.b - t.a;
@@ -50,7 +98,11 @@ vec4 shade(ray_t r, float t, int index)
     vec3 intersection = r.origin + t * r.dir;
 
     // TODO implement different shaders
-    color = prims[index].t.color;
+    switch (prims[index].type)
+    {
+        case PRIMITIVE_TYPE_TRIANGLE: { color = prims[index].t.color; } break;
+        case PRIMITIVE_TYPE_SPHERE:   { color = prims[index].s.color; } break;
+    }
 
     return color;
 }
@@ -102,27 +154,17 @@ void main() {
             float temp  = FLOAT_MAX;
 
             /* compute intersection of ray and primitives */
-            for (int i = 0; i < primitive_count; i++) {
-
+            for (int i = 0; i < primitive_count; i++)
+            {
                 switch (prims[i].type)
                 {
-                    case PRIMITIVE_TYPE_TRIANGLE:
-                    {
-                        temp = ray_triangle_intersection(ray, prims[i].t);
-                        if (temp < t && temp >= -EPSILON) {
-                            t       = temp;
-                            tri_idx = i;
-                        }
-                    } break;
+                    case PRIMITIVE_TYPE_TRIANGLE: { temp = ray_triangle_intersection(ray, prims[i].t); } break;
+                    case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray, prims[i].s);   } break;
+                }
 
-                    case PRIMITIVE_TYPE_SPHERE:
-                    {
-                        //temp = ray_sphere_intersection(ray, prims[i].s);
-                        //if (temp < t && temp >= -EPSILON) {
-                        //    t       = temp;
-                        //    tri_idx = i;
-                        //}
-                    } break;
+                if (temp < t && temp >= -EPSILON) {
+                    t       = temp;
+                    tri_idx = i;
                 }
             }
 
