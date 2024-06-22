@@ -4,11 +4,18 @@
 #include <stdio.h>
 #include <assert.h>
 
+typedef unsigned int uint;
+typedef struct vec3 { union { struct { float x,y,z; }; float e[3]; }; } vec3;
+typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
+
 #define S(x)
+#define T(name, def) typedef struct name def name;
 #include "common.h"
 #undef S
+#undef T
 
 #define S(x) #x "\n" // STRINGIFY macro
+#define T(name,def) "struct " #name " " #def ";\n"
 #define SHADER_STRINGIFY(x) "#version 430 core\n" S(x)
 #define SHADER_VERSION_STRING "#version 430 core\n"
 
@@ -26,15 +33,7 @@ typedef struct vertex_t
     float u,v;
 } vertex_t;
 
-
-typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
-struct camera_t
-{
-    vec4 pos;
-    vec4 dir;
-    int width;
-    int height;
-};
+struct camera_t { vec4 pos; vec4 dir; };
 typedef struct camera_t camera_t;
 
 void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) { fprintf(stderr, "%s\n", message); }
@@ -254,32 +253,25 @@ EXPORT int on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
     }
 
-    _Pragma ("pack(push,1)")
-    struct vec3 { float x; float y; float z; };
-    typedef struct vec3 vec3;
-    /* NOTE: we need to comply with std430 layout */
-    struct triangle_t { vec3 a; float _1; vec3 b; float _2; vec3 c; float _3; float color[4]; };
-    _Pragma ("pack(pop)")
-    typedef struct triangle_t triangle_t;
-    triangle_t triangle_buf[TRIANGLE_COUNT];
-    triangle_buf[0] = (triangle_t){{ 0.7, 0.2, -10}, 0,
-                                   { 0.5, 0.7, -10}, 0,
-                                   { 0.3, 0.2, -10}, 0,
-                                   {0,1,0,1}};
-    triangle_buf[1] = (triangle_t){{ 0.4, 0.5, -5}, 0,
-                                   { 0.3, 0.8, -5}, 0,
-                                   { 0.2, 0.4, -5}, 0,
-                                   {1,0,0,1}};
-    triangle_buf[2] = (triangle_t){{ 0.8, 0.5, -1}, 0,
-                                   { 0.7, 0.8, -1}, 0,
-                                   { 0.5, 0.4, -1}, 0,
-                                   {0,0,1,1}};
+    triangle_t triangle_buf[PRIMITIVE_COUNT];
+    triangle_buf[0] = (triangle_t){{{{ 0.7, 0.2, -10}}}, 0,
+                                   {{{ 0.5, 0.7, -10}}}, 0,
+                                   {{{ 0.3, 0.2, -10}}}, 0,
+                                   {{{0,1,0,1}}} };
+    triangle_buf[1] = (triangle_t){{{{ 0.4, 0.5, -5}}}, 0,
+                                   {{{ 0.3, 0.8, -5}}}, 0,
+                                   {{{ 0.2, 0.4, -5}}}, 0,
+                                   {{{1,0,0,1}}} };
+    triangle_buf[2] = (triangle_t){{{{ 0.8, 0.5, -1}}}, 0,
+                                   {{{ 0.7, 0.8, -1}}}, 0,
+                                   {{{ 0.5, 0.4, -1}}}, 0,
+                                   {{{0,0,1,1}}} };
     /* upload buffers to compute shader */
     {
         GLuint ssbo; // shader storage buffer object
         glGenBuffers(1, &ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(triangle_t) * TRIANGLE_COUNT, triangle_buf, GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(triangle_t) * PRIMITIVE_COUNT, triangle_buf, GL_STATIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
     }
 

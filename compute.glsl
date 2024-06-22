@@ -6,17 +6,18 @@ writeonly uniform image2D output_texture;
 
 struct camera_t { vec4 pos; vec4 dir; };
 uniform camera_t camera;
-struct triangle_t { vec3 a; vec3 b; vec3 c; vec4 color; };
+
+
 layout(std430, binding = 0) buffer triangle_buf { triangle_t triangles[]; };
 
 struct ray_t { vec3 origin; vec3 dir; };
 
 /* constants */
-const float EPSILON        = 0.001f;
-const float FLOAT_MAX      = 3.402823466e+38;
-const uint  WIDTH          = WINDOW_WIDTH;   // from common.h
-const uint  HEIGHT         = WINDOW_HEIGHT;  // from common.h
-const uint  triangle_count = TRIANGLE_COUNT; // from common.h
+const float EPSILON         = 0.001f;
+const float FLOAT_MAX       = 3.402823466e+38;
+const uint  WIDTH           = WINDOW_WIDTH;    // from common.h
+const uint  HEIGHT          = WINDOW_HEIGHT;   // from common.h
+const uint  primitive_count = PRIMITIVE_COUNT; // from common.h
 
 float ray_triangle_intersection(ray_t r, triangle_t t)
 {
@@ -102,7 +103,7 @@ void main() {
             float temp  = FLOAT_MAX;
 
             /* compute intersection of ray and triangles */
-            for (int i = 0; i < triangle_count; i++) {
+            for (int i = 0; i < primitive_count; i++) {
                 temp = ray_triangle_intersection(ray, triangles[i]);
                 if (temp < t && temp >= -EPSILON) {
                     t       = temp;
