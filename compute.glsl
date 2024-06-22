@@ -1,6 +1,6 @@
 SHADER_VERSION_STRING
 #include "common.h"
-S(
+STR(
 writeonly uniform image2D output_texture;
 
 

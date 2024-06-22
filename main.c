@@ -15,7 +15,10 @@ typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; 
 #undef S
 #undef T
 
-#define S(x) #x "\n" // STRINGIFY macro
+#define _STRINGIZE(...) #__VA_ARGS__ "\n"
+#define STR(...) _STRINGIZE(__VA_ARGS__)
+
+#define S(x) #x "\n" // STRINGIFY for common defines
 #define T(name,def) "struct " #name " " #def ";\n"
 #define SHADER_STRINGIFY(x) "#version 430 core\n" S(x)
 #define SHADER_VERSION_STRING "#version 430 core\n"
@@ -262,6 +265,7 @@ EXPORT int on_load(state_t* state)
         if(!success)
         {
             glGetShaderInfoLog(*compute_shader_id, 512, NULL, infoLog);
+            printf("%s\n", cs_source);
             printf("Compute shader compilation failed: %s\n", infoLog);
             return 0;
         };
