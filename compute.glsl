@@ -145,7 +145,7 @@ void main() {
     #endif
 
     /* check for intersections */
-    uint reflection_depth = 1;
+    uint reflection_depth = 2;
     {
         for (uint n = 0; n < reflection_depth; ++n)
         {

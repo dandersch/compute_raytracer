@@ -256,7 +256,6 @@ EXPORT int on_load(state_t* state)
         assert(glGetError() == GL_NO_ERROR);
     }
 
-    primitive_t prim_buf[PRIMITIVE_COUNT];
     memset(prim_buf, 0, sizeof(prim_buf)); // NOTE needs zero initialization
     prim_buf[0].type = PRIMITIVE_TYPE_TRIANGLE;
     prim_buf[0].t = (triangle_t){{{{ 0.7, 0.2, -10}}}, 0,
@@ -455,36 +454,43 @@ int main()
         }
         #endif
 
-        /* poll events */
-        static double cursor_x = 0, cursor_y = 0;
-        {
-            char input = ' ';
+        static double time;
+        float dt = glfwGetTime() - time;
+        const double fps_cap = 1.f / 60.f;
+        if (dt > fps_cap) {
+            time = glfwGetTime();
 
-            glfwPollEvents();
+            /* poll events */
+            static double cursor_x = 0, cursor_y = 0;
+            {
+                char input = ' ';
 
-            /* key inputs */
-            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
-            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)      { input = 'w'; }
-            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)      { input = 'a'; }
-            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)      { input = 's'; }
-            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)      { input = 'd'; }
-            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)      { input = 'q'; }
-            if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)      { input = 'e'; }
+                glfwPollEvents();
 
-            /* cursor pos */
-            double x,y;
-            glfwGetCursorPos(window, &x, &y);
-            double dx = x - cursor_x;
-            double dy = y - cursor_y;
-            cursor_x = x;
-            cursor_y = y;
+                /* key inputs */
+                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); }
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)      { input = 'w'; }
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)      { input = 'a'; }
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)      { input = 's'; }
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)      { input = 'd'; }
+                if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)      { input = 'q'; }
+                if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)      { input = 'e'; }
 
-            update(state, input, dx, dy);
+                /* cursor pos */
+                double x,y;
+                glfwGetCursorPos(window, &x, &y);
+                double dx = x - cursor_x;
+                double dy = y - cursor_y;
+                cursor_x = x;
+                cursor_y = y;
+
+                update(state, input, dx, dy);
+            }
+
+
+            draw(state);
+            glfwSwapBuffers(window);
         }
-
-        draw(state);
-
-        glfwSwapBuffers(window);
     }
 
     printf("Terminated\n");
