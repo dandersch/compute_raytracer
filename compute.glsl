@@ -4,12 +4,15 @@ S(
 
 writeonly uniform image2D output_texture;
 
-struct camera_t { vec4 pos; vec4 dir; };
+/* uniforms */
 uniform camera_t camera;
 
+/* shader storage buffer objects */
 layout(std430, binding = 0) buffer prim_buf { primitive_t prims[]; };
 
-struct ray_t { vec3 origin; vec3 dir; };
+/* internal structs */
+struct ray_t { vec3  origin; vec3 dir;      };
+struct hit_t { float t;      vec3 normal;   }; /* returned by intersections */
 
 /* constants */
 const float EPSILON         = 0.001f;
@@ -18,10 +21,10 @@ const uint  WIDTH           = WINDOW_WIDTH;    // from common.h
 const uint  HEIGHT          = WINDOW_HEIGHT;   // from common.h
 const uint  primitive_count = PRIMITIVE_COUNT; // from common.h
 
-float ray_sphere_intersection(ray_t r, sphere_t s)
+hit_t ray_sphere_intersection(ray_t r, sphere_t s)
 {
-    // NOTE algorithms behave differently when inside sphere
-    #if 1
+    hit_t hit;
+
     vec3  difference   = r.origin - s.pos;
     float a            = 1.0f;
     float b            = 2.0f * dot(r.dir, difference);
@@ -29,7 +32,7 @@ float ray_sphere_intersection(ray_t r, sphere_t s)
     float discriminant = b * b - 4 * a * c;
 
     // see if ray intersects at all
-    if (discriminant < 0) { return FLOAT_MAX; }
+    if (discriminant < 0) { hit.t = FLOAT_MAX; return hit; }
     float root = sqrt(discriminant);
 
     // solution
@@ -39,35 +42,16 @@ float ray_sphere_intersection(ray_t r, sphere_t s)
     float t  = min(t0, t1);
     if (t < EPSILON) { t = max(t0, t1); }
 
-    if (t < EPSILON) { return FLOAT_MAX; }
+    if (t < EPSILON) { t = FLOAT_MAX; }
 
-    return t;
-
-    #else
-
-    vec3 sphere_to_ray = r.origin - s.pos;
-    float s_roc        = dot(r.dir, sphere_to_ray); // b
-    float s_oc         = dot(sphere_to_ray, sphere_to_ray);
-    float d            = s_roc * s_roc - s_oc + s.radius * s.radius;
-
-    if (d < 0) {
-      return FLOAT_MAX;
-    } else {
-      float t1 = sqrt(d);
-      float t2 = -s_roc - t1;
-      t1 = -s_roc + t1;
-
-      /* ray is in sphere */
-      if ((t1 < 0 && t2 > 0) || (t1 > 0 && t2 < 0)) { return FLOAT_MAX; }
-
-      if ((t2 > t1 ? t1 : t2) < 0) { return FLOAT_MAX;           }
-      else                         { return (t2 > t1 ? t1 : t2); }
-    }
-    #endif
+    hit.t = t;
+    return hit;
 }
 
-float ray_triangle_intersection(ray_t r, triangle_t t)
+hit_t ray_triangle_intersection(ray_t r, triangle_t t)
 {
+    hit_t hit;
+
     vec3 a_to_b  = t.b - t.a;
     vec3 a_to_c  = t.c - t.a;
 
@@ -75,7 +59,7 @@ float ray_triangle_intersection(ray_t r, triangle_t t)
 
     float det = determinant(mat);
 
-    if (det == 0.0f) { return FLOAT_MAX; } /* early out */
+    if (det == 0.0f) { hit.t = FLOAT_MAX; return hit; } /* early out */
 
     vec3 ray_to_a = r.origin - t.a;
 
@@ -84,18 +68,22 @@ float ray_triangle_intersection(ray_t r, triangle_t t)
     if (dst.x >= -EPSILON && dst.x <= (1 + EPSILON)) {
         if (dst.y >= -EPSILON && dst.y <= (1 + EPSILON)) {
             if ((dst.x + dst.y) <= (1 + EPSILON)) {
-                return dst.z;
+                hit.t = dst.z;
+                return hit;
             }
         }
     }
-    return FLOAT_MAX;
+
+    hit.t = FLOAT_MAX;
+    return hit;
 }
 
-vec4 shade(ray_t r, float t, int index)
+vec4 shade(ray_t r, hit_t hit, int index)
 {
     vec4 color = vec4(0);
+    // material_t mat = prims[index].mat;
 
-    vec3 intersection = r.origin + t * r.dir;
+    vec3 intersection = r.origin + hit.t * r.dir;
 
     // TODO implement different shaders
     switch (prims[index].type)
@@ -149,8 +137,9 @@ void main() {
         for (uint n = 0; n < reflection_depth; ++n)
         {
             int tri_idx = -1;
-            float t     = FLOAT_MAX;
-            float temp  = FLOAT_MAX;
+            int a,b;
+            hit_t hit   = { FLOAT_MAX, vec3(0,0,0) };
+            hit_t temp  = { FLOAT_MAX, vec3(0,0,0) };
 
             /* compute intersection of ray and primitives */
             for (int i = 0; i < primitive_count; i++)
@@ -161,8 +150,8 @@ void main() {
                     case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray, prims[i].s);   } break;
                 }
 
-                if (temp < t && temp >= -EPSILON) {
-                    t       = temp;
+                if (temp.t < hit.t && hit.t >= -EPSILON) {
+                    hit     = temp;
                     tri_idx = i;
                 }
             }
@@ -170,7 +159,7 @@ void main() {
             if (tri_idx != -1) /* ray hit triangle */
             {
                 /* compute color */
-                color = shade(ray, t, tri_idx); // TODO consider specularity
+                color = shade(ray, hit, tri_idx); // TODO consider specularity
 
                 // TODO if not specular, exit early, else compute a reflection ray
             } else {
