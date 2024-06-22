@@ -395,6 +395,23 @@ EXPORT int on_load(state_t* state)
                                      {{{ 5, 5, -5}}}, 0};
         prim_buf[i].mat.type = MATERIAL_TYPE_DIFFUSE;
         prim_buf[i].mat.color = (vec4){{{0.3, 0.3, 0.3, 1}}};
+
+        // "infinite" floor plane
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{-5000,  5.1, -5000}}}, 0,
+                                     {{{ 5000,  5.1, -5000}}}, 0,
+                                     {{{-5000,  5.1,  5000}}}, 0};
+        prim_buf[i].mat.type = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0.5, 0.8, 0.3, 1}}};
+
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{ 5000,  5.1,  5000}}}, 0,
+                                     {{{-5000,  5.1,  5000}}}, 0,
+                                     {{{ 5000,  5.1, -5000}}}, 0};
+        prim_buf[i].mat.type = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0.5, 0.8, 0.3, 1}}};
     }
 
     {
