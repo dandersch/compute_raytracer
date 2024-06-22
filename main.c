@@ -473,8 +473,7 @@ EXPORT void draw(state_t* state)
         glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir.x, camera->dir.y, camera->dir.z, camera->dir.w);
     }
 
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    #define WORK_GROUP_SIZE 1 // needs to match local_size_{x,y} in compute shader
+    glMemoryBarrier(GL_ALL_BARRIER_BITS); // TODO is this needed
     glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 

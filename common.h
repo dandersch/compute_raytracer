@@ -6,10 +6,13 @@
  * NOTE: Can also contain e.g. helper functions that are shared between shaders.
  */
 #define WINDOW_TITLE "compute raytracer"
-#define WINDOW_WIDTH  640
-#define WINDOW_HEIGHT 640
+#define WINDOW_WIDTH  1280
+#define WINDOW_HEIGHT 720
 #define CAMERA_FOV     90
 #define PRIMITIVE_COUNT 15 // size of buffer
+
+/* NOTE: for values >=64 we get error: product of local_sizes exceeds MAX_COMPUTE_WORK_GROUP_INVOCATIONS (2048) */
+#define WORK_GROUP_SIZE 32 // used in glDispatchCompute and local_size_x in compute shader
 
 /* used for lack of enums in glsl */
 #define PRIMITIVE_TYPE_NONE      0
