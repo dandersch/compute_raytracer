@@ -194,7 +194,11 @@ void main() {
                     color += temp_color;
                 }
             } else {
-                break; /* early return */
+                if (n == 0) /* we hit nothing but the background */
+                {
+                    color = background_color;
+                    break; /* early return */
+                }
             }
         }
     }
