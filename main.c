@@ -315,7 +315,7 @@ EXPORT void update(state_t* state, char input, double delta_cursor_x, double del
 
         /* rotate around X axis */
         float pitch = atan2(dir->y, sqrt(dir->x * dir->x + dir->z * dir->z));
-        pitch -= delta_cursor_y * rot_speed;
+        pitch += delta_cursor_y * rot_speed;
         if (pitch > M_PI / 2)  { pitch =  M_PI / 2; }
         if (pitch < -M_PI / 2) { pitch = -M_PI / 2; }
         dir->x = cos(pitch) * cos(yaw);

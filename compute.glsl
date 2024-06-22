@@ -131,16 +131,15 @@ void main() {
     }
     #else
     { /* perspective projection */
-        //camera.dir.xyz = normalize(camera.dir.xyz); // TODO normalize might be needed
-        vec3 right = normalize(cross(camera.dir.xyz, vec3(0, 1, 0)));
-        vec3 up    = normalize(cross(right, camera.dir.xyz));
+        vec3 cam_dir = normalize(camera.dir.xyz);
+        vec3 right   = normalize(cross(cam_dir, vec3(0, 1, 0)));
+        vec3 up      = normalize(cross(right, cam_dir));
 
         float aspect_ratio = float(WIDTH) / float(HEIGHT);
         float fov = radians(CAMERA_FOV); // from common.h
         float tan_half_fov = tan(fov / 2.0);
 
-        ray.dir = normalize(camera.dir.xyz +
-                            right * (2.0 * ndc.x - 1.0) * tan_half_fov * aspect_ratio + up * (1.0 - 2.0 * ndc.y) * tan_half_fov);
+        ray.dir = normalize(cam_dir + right * (2.0 * ndc.x - 1.0) * tan_half_fov * aspect_ratio + up * (1.0 - 2.0 * ndc.y) * tan_half_fov);
     }
     #endif
 
@@ -172,6 +171,8 @@ void main() {
             {
                 /* compute color */
                 color = shade(ray, t, tri_idx); // TODO consider specularity
+
+                // TODO if not specular, exit early, else compute a reflection ray
             } else {
                 break; /* early return */
             }
