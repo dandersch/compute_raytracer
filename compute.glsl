@@ -8,7 +8,8 @@ writeonly uniform image2D output_texture;
 uniform camera_t camera;
 
 /* shader storage buffer objects */
-layout(std430, binding = 0) buffer prim_buf { primitive_t prims[]; };
+layout(std430, binding = 0) buffer prim_buf  { primitive_t prims[]; };
+layout(std430, binding = 1) buffer light_buf { light_t lights[];    };
 
 /* internal structs */
 struct ray_t { vec3  origin; vec3 dir;      };

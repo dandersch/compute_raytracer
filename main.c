@@ -30,6 +30,7 @@ char teapot_obj[] =
 #include "tinyobj_loader_c.h"
 
 primitive_t prim_buf[PRIMITIVE_COUNT];
+light_t     light_buf[LIGHT_COUNT];
 
 #ifdef COMPILE_DLL
 #if defined(_MSC_VER)
@@ -399,11 +400,17 @@ EXPORT int on_load(state_t* state)
 
     /* upload buffers to compute shader */
     {
-        GLuint ssbo; // shader storage buffer object
-        glGenBuffers(1, &ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+        GLuint ssbo_prims; // shader storage buffer object
+        glGenBuffers(1, &ssbo_prims);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_prims);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(primitive_t) * PRIMITIVE_COUNT, prim_buf, GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_prims);
+
+        GLuint ssbo_lights;
+        glGenBuffers(1, &ssbo_lights);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(light_t) * LIGHT_COUNT, light_buf, GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_lights);
     }
 
     if (!state->initialized)
