@@ -25,26 +25,34 @@ hit_t ray_sphere_intersection(ray_t r, sphere_t s)
 {
     hit_t hit;
 
-    vec3  difference   = r.origin - s.pos;
-    float a            = 1.0f;
-    float b            = 2.0f * dot(r.dir, difference);
-    float c            = dot(difference, difference) - s.radius * s.radius;
-    float discriminant = b * b - 4 * a * c;
+    /* compute t */
+    {
+        vec3  difference   = r.origin - s.pos;
+        float a            = 1.0f;
+        float b            = 2.0f * dot(r.dir, difference);
+        float c            = dot(difference, difference) - s.radius * s.radius;
+        float discriminant = b * b - 4 * a * c;
 
-    // see if ray intersects at all
-    if (discriminant < 0) { hit.t = FLOAT_MAX; return hit; }
-    float root = sqrt(discriminant);
+        /* see if ray intersects at all */
+        if (discriminant < 0) { hit.t = FLOAT_MAX; return hit; }
+        float root = sqrt(discriminant);
 
-    // solution
-    float q  = -0.5f * (b < 0 ? (b - root) : (b + root));
-    float t0 = q / a;
-    float t1 = c / q;
-    float t  = min(t0, t1);
-    if (t < EPSILON) { t = max(t0, t1); }
+        /* solve for t */
+        float q  = -0.5f * (b < 0 ? (b - root) : (b + root));
+        float t0 = q / a;
+        float t1 = c / q;
+        float t  = min(t0, t1);
+        if (t < EPSILON) { t = max(t0, t1); } /* too close to camera */
 
-    if (t < EPSILON) { t = FLOAT_MAX; }
+        if (t < EPSILON) { t = FLOAT_MAX; }   /* still too close to camera */
 
-    hit.t = t;
+        hit.t = t;
+    }
+
+    /* set the normal at the hitpoint */
+    vec3 intersection = r.origin + hit.t * r.dir;
+    hit.normal = normalize(intersection - s.pos);
+
     return hit;
 }
 
@@ -75,21 +83,25 @@ hit_t ray_triangle_intersection(ray_t r, triangle_t t)
     }
 
     hit.t = FLOAT_MAX;
+
+    /* calculate normal */
+
     return hit;
 }
 
 vec4 shade(ray_t r, hit_t hit, int index)
 {
-    vec4 color = vec4(0);
-    // material_t mat = prims[index].mat;
+    vec4 color     = vec4(0);
+
+    material_t mat = prims[index].mat;
 
     vec3 intersection = r.origin + hit.t * r.dir;
 
     // TODO implement different shaders
-    switch (prims[index].type)
+    switch (prims[index].mat.type)
     {
-        case PRIMITIVE_TYPE_TRIANGLE: { color = prims[index].t.color; } break;
-        case PRIMITIVE_TYPE_SPHERE:   { color = prims[index].s.color; } break;
+        case MATERIAL_TYPE_DIFFUSE:  { color = mat.color; } break;
+        case MATERIAL_TYPE_SPECULAR: { color = mat.color; } break;
     }
 
     return color;
@@ -100,8 +112,8 @@ void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    const vec4 background_color = vec4(0.3,0.2,0,1);
-    vec4 color = background_color; // final color of pixel on texture
+    const vec4 background_color = vec4(0.1,0.4,0.2,1); // NOTE unused
+    vec4 color = vec4(0); // final color of pixel on texture
 
     /* init ray */
     ray_t ray;
@@ -132,11 +144,11 @@ void main() {
     #endif
 
     /* check for intersections */
-    uint reflection_depth = 2;
+    uint reflection_depth = 3;
     {
         for (uint n = 0; n < reflection_depth; ++n)
         {
-            int tri_idx = -1;
+            int tri_idx = -1; // TODO rename
             int a,b;
             hit_t hit   = { FLOAT_MAX, vec3(0,0,0) };
             hit_t temp  = { FLOAT_MAX, vec3(0,0,0) };
@@ -158,10 +170,29 @@ void main() {
 
             if (tri_idx != -1) /* ray hit triangle */
             {
-                /* compute color */
-                color = shade(ray, hit, tri_idx); // TODO consider specularity
+                material_t mat = prims[tri_idx].mat;
 
-                // TODO if not specular, exit early, else compute a reflection ray
+                /* compute color */
+                vec4 temp_color = shade(ray, hit, tri_idx);
+
+                /* reflect if material is specular */
+                if (mat.type == MATERIAL_TYPE_SPECULAR)
+                {
+                    float spec  = mat.spec;
+                    color      += spec * temp_color;
+                    /* compute reflection ray */
+                    {
+                        vec3 intersection = ray.origin + hit.t * ray.dir;
+                        vec3 reflection   = normalize(ray.dir - 2 * dot(ray.dir, hit.normal) * hit.normal);
+
+                        ray.origin = intersection + reflection;
+                        ray.dir =  reflection;
+                    }
+                }
+                else // no reflection needed
+                {
+                    color += temp_color;
+                }
             } else {
                 break; /* early return */
             }
