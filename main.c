@@ -8,6 +8,10 @@
 typedef unsigned int uint;
 typedef struct vec3 { union { struct { float x,y,z; }; float e[3]; }; } vec3;
 typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
+typedef struct vertex_t {
+    float x,y,z,w;
+    float u,v;
+} vertex_t;
 
 #define T(name, def) typedef struct name def name;
 #include "common.h"
@@ -34,16 +38,6 @@ primitive_t prim_buf[PRIMITIVE_COUNT];
     #define EXPORT __attribute__((visibility("default")))
 #endif
 
-typedef struct vertex_t
-{
-    float x,y,z,w;
-    float u,v;
-} vertex_t;
-
-struct camera_t { vec4 pos; vec4 dir; };
-typedef struct camera_t camera_t;
-
-void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) { fprintf(stderr, "%s\n", message); }
 
 typedef struct state_t
 {
@@ -74,6 +68,7 @@ typedef struct state_t
     camera_t camera;
 } state_t;
 
+void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) { fprintf(stderr, "%s\n", message); }
 void get_file_data(void* c, const char* f, int m, const char* o, char **buf, size_t *len) { *buf = teapot_obj; *len = sizeof(teapot_obj);}
 EXPORT int on_load(state_t* state)
 {

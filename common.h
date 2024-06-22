@@ -21,7 +21,8 @@
  * manually (always aligned to the size of a vec4) seems to work. We could also make use of
  * _Pragma ("pack(push,n)") _Pragma ("pack(pop)") when expanding the macro on the C-side.
  */
-T(material_t,  { uint type; float _unused[3]; vec4 color;})
+T(camera_t,    { vec4 pos;                    vec4 dir;                                         })
+T(material_t,  { uint type; float _unused[3]; vec4 color;                                       })
 T(sphere_t,    { vec3 pos; float radius;      vec4 color;                                       })
 T(triangle_t,  { vec3 a; float _1;            vec3 b; float _2; vec3 c; float _3; vec4 color;   })
 T(primitive_t, { uint type; float _unused[3]; sphere_t s;                         triangle_t t; }) // TODO correct padding?
