@@ -103,6 +103,34 @@ EXPORT int on_load(state_t* state)
         printf("OpenGL version %s\n", version);
     }
 
+    /* print out information about work group sizes */
+    if (0)
+    {
+        int work_grp_cnt[3];
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_grp_cnt[1]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]);
+        printf("Max work groups per compute shader\n");
+        printf("   x: %i\n", work_grp_cnt[0]);
+        printf("   y: %i\n", work_grp_cnt[1]);
+        printf("   z: %i\n", work_grp_cnt[2]);
+        printf("\n");
+
+        int work_grp_size[3];
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &work_grp_size[0]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &work_grp_size[1]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &work_grp_size[2]);
+        printf("Max work group sizes\n");
+        printf("   x: %i\n", work_grp_size[0]);
+        printf("   y: %i\n", work_grp_size[1]);
+        printf("   z: %i\n", work_grp_size[2]);
+
+        int work_grp_inv;
+        glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv);
+        printf("Max invocations count per work group: %i\n", work_grp_inv);
+        //exit(0);
+    }
+
     /* enable debugging abilities */
     {
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -454,7 +482,7 @@ vec4 vec4_add(const vec4 lhs, const vec4 rhs) { vec4 ret = {{{lhs.x + rhs.x, lhs
 vec4 vec4_sub(const vec4 lhs, const vec4 rhs) { vec4 ret = {{{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w}}}; return ret; }
 vec4 vec4_cross(const vec4 v1, vec4 v2) { vec4 ret = {{{v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x, 1.0f}}}; return ret; }
 
-#include <math.h> // for fmod, sqrt, atan2, cos, sin, ...
+#include <math.h> // for fmod, sqrt, atan2, cos, sin, M_PI, ...
 EXPORT void update(state_t* state, char input, double delta_cursor_x, double delta_cursor_y)
 {
     vec4* dir = &state->camera.dir;
