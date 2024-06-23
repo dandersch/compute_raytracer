@@ -609,6 +609,10 @@ int main()
         static double time;
         float dt = glfwGetTime() - time;
         const double fps_cap = 1.f / 60.f;
+
+        char fps_string[30];
+        sprintf(fps_string, "%f", 1/dt);
+        glfwSetWindowTitle(window, fps_string);
         if (dt > fps_cap) {
             time = glfwGetTime();
 
