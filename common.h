@@ -13,7 +13,8 @@
 #define LIGHT_COUNT      3 // size of light_buf
 
 /* NOTE: for values >=64 we get error: product of local_sizes exceeds MAX_COMPUTE_WORK_GROUP_INVOCATIONS (2048) */
-#define WORK_GROUP_SIZE 32 // used in glDispatchCompute and local_size_x in compute shader
+#define WORK_GROUP_SIZE_X 16 // used in glDispatchCompute and local_size_x in compute shader
+#define WORK_GROUP_SIZE_Y 16 // used in glDispatchCompute and local_size_y in compute shader
 
 /* used for lack of enums in glsl */
 #define PRIMITIVE_TYPE_NONE      0

@@ -506,7 +506,7 @@ EXPORT void draw(state_t* state)
     }
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS); // TODO is this needed
-    glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE, WINDOW_HEIGHT/WORK_GROUP_SIZE, 1);
+    glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE_X, WINDOW_HEIGHT/WORK_GROUP_SIZE_Y, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     glUseProgram(state->shader_program_id);
