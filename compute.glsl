@@ -93,7 +93,7 @@ hit_t ray_triangle_intersection(ray_t r, triangle_t t)
 
 vec4 shade(ray_t r, hit_t hit, int index)
 {
-    vec4 color     = vec4(0);
+    vec4 color     = vec4(0,0,0,1);
 
     material_t mat = prims[index].mat;
 
@@ -144,7 +144,8 @@ void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
 
-    const vec4 background_color = vec4(0.2,0.6,0.7,1);
+    //const vec4 background_color = vec4(0.2,0.6,0.7,1);
+    const vec4 background_color = vec4(0,0,0,0); // transparent
     vec4 color = vec4(0); // final color of pixel on texture
 
     /* init ray */

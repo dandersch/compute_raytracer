@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <GL/glew.h> // for loading gl functions, see https://www.glfw.org/docs/3.3/context_guide.html for manual loading
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
@@ -10,7 +10,7 @@ typedef struct vec3 { union { struct { float x,y,z; }; float e[3]; }; } vec3;
 typedef struct vec4 { union { struct { float x,y,z,w; }; float e[4]; }; } vec4; // TODO use for vertex
 typedef struct vertex_t {
     float x,y,z,w;
-    float u,v;
+    float u,v; // NOTE unused
 } vertex_t;
 
 #define T(name, def) typedef struct name def name;
@@ -73,24 +73,26 @@ void GLAPIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum 
 void get_file_data(void* c, const char* f, int m, const char* o, char **buf, size_t *len) { *buf = teapot_obj; *len = sizeof(teapot_obj);}
 EXPORT int on_load(state_t* state)
 {
-    tinyobj_attrib_t attrib;
-    tinyobj_shape_t* shapes = NULL;
-    size_t num_shapes;
-    tinyobj_material_t* materials = NULL;
-    size_t num_materials;
-    unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
+    /* test obj file loading */
+    {
+        tinyobj_attrib_t attrib;
+        tinyobj_shape_t* shapes = NULL;
+        size_t num_shapes;
+        tinyobj_material_t* materials = NULL;
+        size_t num_materials;
+        unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
 
-    int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, "teapot.obj", get_file_data, NULL, flags);
-    if (ret != TINYOBJ_SUCCESS) {
-        printf("Failure\n");
-        return 0;
+        int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
+                                    &num_materials, "teapot.obj", get_file_data, NULL, flags);
+        if (ret != TINYOBJ_SUCCESS) {
+            printf("Failure\n");
+            return 0;
+        }
+        printf("# of shapes    = %d\n", (int)num_shapes);
+        printf("# of materials = %d\n", (int)num_materials);
+        printf("# of vertices = %d\n", attrib.num_vertices);
+        printf("# of faces    = %d\n", attrib.num_faces);
     }
-    printf("# of shapes    = %d\n", (int)num_shapes);
-    printf("# of materials = %d\n", (int)num_materials);
-    printf("# of vertices = %d\n", attrib.num_vertices);
-    printf("# of faces    = %d\n", attrib.num_faces);
-
 
     /* init glew */
     {
@@ -537,12 +539,12 @@ EXPORT void draw(state_t* state)
     glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE_X, WINDOW_HEIGHT/WORK_GROUP_SIZE_Y, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-    glUseProgram(state->shader_program_id);
-    //glActiveTexture(GL_TEXTURE0 + 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, state->texture_vbo);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    /* draw the texture */
+    {
+        glUseProgram(state->shader_program_id);
+        glBindBuffer(GL_ARRAY_BUFFER, state->texture_vbo);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
 }
 #endif /* COMPILE_DLL */
 
@@ -579,13 +581,18 @@ int main()
         glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
         glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 
+        /* NOTE: experimenting with transparent windows */
+        glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if (!window) { printf("Failed to create GLFW window.\n"); glfwTerminate(); }
 
         glfwSetWindowTitle(window, WINDOW_TITLE);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwMakeContextCurrent(window);
-        glfwSwapInterval(1); // VSYNC = 1
+        glfwSwapInterval(1); // VSYNC
     }
 
     #ifndef COMPILE_DLL
@@ -602,6 +609,9 @@ int main()
     state_t* state = malloc(1024 * 1024);
     memset(state, 0, 1024 * 1024);
     on_load(state);
+
+    /* for some reason this hint is ignored when creating the window */
+    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
 
     while (!glfwWindowShouldClose(window))
     {
