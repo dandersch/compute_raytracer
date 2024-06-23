@@ -23,9 +23,11 @@ typedef struct vertex_t {
 #define SHADER_VERSION_STRING "#version 430 core\n"
 
 
-char teapot_obj[] =
-                   #include "teapot.obj.inc"
+/* NOTE: "string too big" error on msvc */
+char teapot_obj[] = ""
+//                   #include "teapot.obj.inc"
                    ;
+
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobj_loader_c.h"
 
