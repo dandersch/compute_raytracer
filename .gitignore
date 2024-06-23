@@ -1,3 +1,6 @@
 main
+main.exe
 *.obj
 code.dll
+glew32.dll
+glfw3.dll
