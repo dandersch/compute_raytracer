@@ -535,7 +535,6 @@ EXPORT void draw(state_t* state)
         glUniform4f(glGetUniformLocation(*cs_program_id, "camera.dir"), camera->dir.x, camera->dir.y, camera->dir.z, camera->dir.w);
     }
 
-    glMemoryBarrier(GL_ALL_BARRIER_BITS); // TODO is this needed
     glDispatchCompute(WINDOW_WIDTH/WORK_GROUP_SIZE_X, WINDOW_HEIGHT/WORK_GROUP_SIZE_Y, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -648,11 +647,13 @@ int main()
         float dt = glfwGetTime() - time;
         const double fps_cap = 1.f / 60.f;
 
-        char fps_string[30];
-        sprintf(fps_string, "%f", 1/dt);
-        glfwSetWindowTitle(window, fps_string);
         if (dt > fps_cap) {
             time = glfwGetTime();
+
+            /* NOTE: do not set window title in a loop with uncapped fps */
+            char fps_string[30];
+            sprintf(fps_string, "%f", 1/dt);
+            glfwSetWindowTitle(window, fps_string);
 
             /* poll events */
             static double cursor_x = 0, cursor_y = 0;
