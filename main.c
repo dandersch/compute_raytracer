@@ -313,32 +313,68 @@ EXPORT int on_load(state_t* state)
     /* construct scene */
     {
         memset(prim_buf, 0, sizeof(prim_buf)); // NOTE needs zero initialization
+
+        // box front
         int i = 0;
         prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
-        prim_buf[i].t = (triangle_t){{{{ 0.4, 0.5, -5}}}, 0,
-                                     {{{ 0.3, 0.8, -5}}}, 0,
-                                     {{{ 0.2, 0.4, -5}}}, 0,};
+        prim_buf[i].t = (triangle_t){{{{ 3.0, 5.0, -1}}}, 0,
+                                     {{{ 0.0, 5.0, -1}}}, 0,
+                                     {{{ 0.0, 2.0, -1}}}, 0,};
         prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
-        prim_buf[i].mat.color = (vec4){{{1,0,0,1}}};
+        prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
 
         i++;
         prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
-        prim_buf[i].t = (triangle_t){{{{ 0.8, 0.5, -1}}}, 0,
-                                     {{{ 0.7, 0.8, -1}}}, 0,
-                                     {{{ 0.5, 0.4, -1}}}, 0,};
+        prim_buf[i].t = (triangle_t){{{{ 3.0, 5.0, -1}}}, 0,
+                                     {{{ 0.0, 2.0, -1}}}, 0,
+                                     {{{ 3.0, 2.0, -1}}}, 0,};
+        prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
+
+        // box top
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{ 0.0, 2.0, -1}}}, 0,
+                                     {{{ 0.0, 2.0,  3}}}, 0,
+                                     {{{ 3.0, 2.0, -1}}}, 0,};
+        prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
+        
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{ 0.0, 2.0,  3}}}, 0,
+                                     {{{ 3.0, 2.0,  3}}}, 0,
+                                     {{{ 3.0, 2.0, -1}}}, 0,};
+        prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
+
+        // box right side
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{ 0.0, 5.0, -1}}}, 0,
+                                     {{{ 0.0, 5.0,  3}}}, 0,
+                                     {{{ 0.0, 2.0,  3}}}, 0,};
+        prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
+        prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
+
+        i++;
+        prim_buf[i].type = PRIMITIVE_TYPE_TRIANGLE;
+        prim_buf[i].t = (triangle_t){{{{ 0.0, 2.0,  3}}}, 0,
+                                     {{{ 0.0, 2.0, -1}}}, 0,
+                                     {{{ 0.0, 5.0, -1}}}, 0,};
         prim_buf[i].mat.type  = MATERIAL_TYPE_DIFFUSE;
         prim_buf[i].mat.color = (vec4){{{0,0,1,1}}};
 
         i++;
         prim_buf[i].type = PRIMITIVE_TYPE_SPHERE;
-        prim_buf[i].s = (sphere_t){{{{ 0.8, 0.5, -3}}}, 1.0};
+        prim_buf[i].s = (sphere_t){{{{  2, 0.5, -3}}}, 1.0};
         prim_buf[i].mat.type  = MATERIAL_TYPE_SPECULAR;
         prim_buf[i].mat.color = (vec4){{{1,1,0,1}}};
         prim_buf[i].mat.spec  = 0.5f;
 
         i++;
         prim_buf[i].type = PRIMITIVE_TYPE_SPHERE;
-        prim_buf[i].s = (sphere_t){{{{ 0.3, 1.5, 2}}}, 1.0};
+        prim_buf[i].s = (sphere_t){{{{ -1, -2, 2}}}, 1.0};
         prim_buf[i].mat.type  = MATERIAL_TYPE_SPECULAR;
         prim_buf[i].mat.color = (vec4){{{1,0,1,1}}};
         prim_buf[i].mat.spec  = 0.9f;
@@ -510,14 +546,18 @@ EXPORT void update(state_t* state, char input, double delta_cursor_x, double del
         dir->z = cos(pitch) * sin(yaw);
     }
 
+    dir->x *= 0.5f;
+    dir->y *= 0.5f;
+    dir->z *= 0.5f;
+
     switch(input)
     {
         case 'w': { state->camera.pos = vec4_add(state->camera.pos, *dir); } break;
         case 'a': { state->camera.pos = vec4_sub(state->camera.pos, vec4_cross(*dir, (vec4){{{0,1,0,1}}})); } break;
         case 's': { state->camera.pos = vec4_sub(state->camera.pos, *dir); } break;
         case 'd': { state->camera.pos = vec4_add(state->camera.pos, vec4_cross(*dir, (vec4){{{0,1,0,1}}})); } break;
-        case 'q': { state->camera.pos.y += 0.5; } break;
-        case 'e': { state->camera.pos.y -= 0.5; } break;
+        case 'q': { state->camera.pos.y += 0.03; } break;
+        case 'e': { state->camera.pos.y -= 0.03; } break;
         default: {} break;
     }
 }
@@ -584,8 +624,8 @@ int main()
 
         /* NOTE: experimenting with transparent windows */
         glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+        glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+        //glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if (!window) { printf("Failed to create GLFW window.\n"); glfwTerminate(); }
@@ -612,7 +652,7 @@ int main()
     on_load(state);
 
     /* for some reason this hint is ignored when creating the window */
-    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+    //glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
 
     while (!glfwWindowShouldClose(window))
     {

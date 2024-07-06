@@ -6,10 +6,10 @@
  * NOTE: Can also contain e.g. helper functions that are shared between shaders.
  */
 #define WINDOW_TITLE    "compute raytracer"
-#define WINDOW_WIDTH    640
-#define WINDOW_HEIGHT   640
+#define WINDOW_WIDTH    960
+#define WINDOW_HEIGHT   540
 #define CAMERA_FOV       90
-#define PRIMITIVE_COUNT  20 // size of prim_buf
+#define PRIMITIVE_COUNT  30 // size of prim_buf
 #define LIGHT_COUNT       3 // size of light_buf
 
 /* NOTE: for values >=64 we get error: product of local_sizes exceeds MAX_COMPUTE_WORK_GROUP_INVOCATIONS (2048) */
