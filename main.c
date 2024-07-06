@@ -583,9 +583,9 @@ int main()
         glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 
         /* NOTE: experimenting with transparent windows */
-        glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+        //glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+        //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+        //glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if (!window) { printf("Failed to create GLFW window.\n"); glfwTerminate(); }
@@ -593,7 +593,7 @@ int main()
         glfwSetWindowTitle(window, WINDOW_TITLE);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwMakeContextCurrent(window);
-        glfwSwapInterval(1); // VSYNC
+        glfwSwapInterval(0); // VSYNC
     }
 
     #ifndef COMPILE_DLL
@@ -649,7 +649,8 @@ int main()
         float dt = glfwGetTime() - time;
         const double fps_cap = 1.f / 60.f;
 
-        if (dt > fps_cap) {
+        //if (dt > fps_cap)
+        {
             time = glfwGetTime();
 
             /* NOTE: do not set window title in a loop with uncapped fps */

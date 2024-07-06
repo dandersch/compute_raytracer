@@ -23,6 +23,71 @@ const uint  HEIGHT          = WINDOW_HEIGHT;   // from common.h
 const uint  primitive_count = PRIMITIVE_COUNT; // from common.h
 const uint  light_count     = LIGHT_COUNT;     // from common.h
 
+hit_t ray_intersection(ray_t r, primitive_t prim)
+{
+    hit_t hit;
+
+    sphere_t s = prim.s;
+    triangle_t t = prim.t;
+
+    /* compute t */
+    float t_sphere = FLOAT_MAX;
+    {
+        vec3  difference   = r.origin - s.pos;
+        float a            = 1.0f;
+        float b            = 2.0f * dot(r.dir, difference);
+        float c            = dot(difference, difference) - s.radius * s.radius;
+        float discriminant = b * b - 4 * a * c;
+
+        /* see if ray intersects at all */
+        if (discriminant < 0) { t_sphere = FLOAT_MAX; }
+        float root = sqrt(discriminant);
+
+        /* solve for t */
+        float q  = -0.5f * (b < 0 ? (b - root) : (b + root));
+        float t0 = q / a;
+        float t1 = c / q;
+        float t  = min(t0, t1);
+        if (t < EPSILON) { t = max(t0, t1); } /* too close to camera */
+
+        if (t < EPSILON) { t = FLOAT_MAX; }   /* still too close to camera */
+
+        t_sphere = t;
+
+        /* set the normal at the hitpoint */
+        vec3 intersection = r.origin + t_sphere * r.dir;
+        hit.normal = normalize(intersection - s.pos);
+    }
+
+    float t_triangle = FLOAT_MAX;
+    {
+        vec3 a_to_b  = t.b - t.a;
+        vec3 a_to_c  = t.c - t.a;
+
+        mat3 mat = mat3(a_to_b, a_to_c, -1.0f * r.dir);
+
+        float det = determinant(mat);
+
+        if (det == 0.0f) { t_triangle = FLOAT_MAX; }
+
+        vec3 ray_to_a = r.origin - t.a;
+
+        vec3 dst = inverse(mat) * ray_to_a;
+
+        if (dst.x >= -EPSILON && dst.x <= (1 + EPSILON)) {
+            if (dst.y >= -EPSILON && dst.y <= (1 + EPSILON)) {
+                if ((dst.x + dst.y) <= (1 + EPSILON)) {
+                    t_triangle = dst.z;
+                }
+            }
+        }
+    }
+
+    hit.t = min(t_triangle, t_sphere);
+
+    return hit;
+}
+
 hit_t ray_sphere_intersection(ray_t r, sphere_t s)
 {
     hit_t hit;
@@ -110,12 +175,7 @@ vec4 shade(ray_t r, hit_t hit, int index)
         for (int prim_idx = 0; prim_idx < primitive_count; prim_idx++)
         {
             hit_t temp = {FLOAT_MAX, vec3(0)};
-            switch (prims[prim_idx].type)
-            {
-                case PRIMITIVE_TYPE_TRIANGLE: { temp = ray_triangle_intersection(ray_to_light, prims[prim_idx].t); } break;
-                case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray_to_light,   prims[prim_idx].s); } break;
-                default: { } break;
-            }
+            temp = ray_intersection(ray_to_light, prims[prim_idx]);
 
             if (temp.t < FLOAT_MAX && temp.t >= EPSILON && temp.t < length(intersection - lights[i].pos))
             {
@@ -185,22 +245,17 @@ void main() {
             int a,b;
             hit_t hit   = { FLOAT_MAX, vec3(0,0,0) };
             hit_t temp  = { FLOAT_MAX, vec3(0,0,0) };
-
             /* compute intersection of ray and primitives */
             for (int i = 0; i < primitive_count; i++)
             {
-                switch (prims[i].type)
-                {
-                    case PRIMITIVE_TYPE_TRIANGLE: { temp = ray_triangle_intersection(ray, prims[i].t); } break;
-                    case PRIMITIVE_TYPE_SPHERE:   { temp = ray_sphere_intersection(ray, prims[i].s);   } break;
-                }
-
+                temp = ray_intersection(ray, prims[i]);
                 if (temp.t < hit.t && temp.t >= EPSILON) {
                     hit     = temp;
                     tri_idx = i;
                 }
             }
 
+            //float no_intersection = step(-1, tri_idx);
             if (tri_idx != -1) /* ray hit triangle */
             {
                 material_t mat = prims[tri_idx].mat;
